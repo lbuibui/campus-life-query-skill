@@ -2,7 +2,7 @@
 
 ![University Info Skill cover](assets/cover.png)
 
-一个用于 HanaAgent / OpenHanako 的大学生活信息查询 Skill。
+一个大学生活信息查询 Skill。
 
 它把开源项目 [CollegesChat/university-information](https://github.com/CollegesChat/university-information) 的全国高校生活质量数据整理为可被 Agent 调用的本地知识库，并附带一个自包含的 **UNTI 大学生活人格测试** HTML 页面。
 
