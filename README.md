@@ -1,5 +1,7 @@
 # University Info Skill · 大学生活质量指北 + UNTI 人格测试
 
+![University Info Skill cover](assets/cover.png)
+
 一个用于 HanaAgent / OpenHanako 的大学生活信息查询 Skill。
 
 它把开源项目 [CollegesChat/university-information](https://github.com/CollegesChat/university-information) 的全国高校生活质量数据整理为可被 Agent 调用的本地知识库，并附带一个自包含的 **UNTI 大学生活人格测试** HTML 页面。
@@ -63,6 +65,7 @@ university-info-skill/
 ├── LICENSE                     # 原项目 CC BY-NC-SA 4.0 完整协议文本
 ├── NOTICE.md                   # 数据来源与署名说明
 ├── assets/
+│   ├── cover.png               # README 头图
 │   └── UNTI-测试.html          # UNTI 人格测试页面
 └── references/
     ├── index.md                # 学校索引
