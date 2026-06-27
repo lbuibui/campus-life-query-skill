@@ -50,7 +50,9 @@ campus-life-query-skill/
 
 在 Claude Code、Codex、OpenClaw 等支持 Skill 的 Agent 里，直接说：
 
-> 帮我安装这个 skill：https://github.com/lbuibui/campus-life-query-skill
+```text
+帮我安装这个 skill：https://github.com/lbuibui/campus-life-query-skill
+```
 
 Agent 会自己克隆 skill 到对应目录，不用操心路径。
 
