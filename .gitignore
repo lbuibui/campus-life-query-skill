@@ -1,5 +1,6 @@
 .DS_Store
 .reasonix/
+reasonix.toml
 __pycache__/
 *.pyc
 *.log
