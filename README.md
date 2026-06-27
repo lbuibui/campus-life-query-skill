@@ -3,6 +3,8 @@
 全国大学生活质量数据库 Skill，覆盖 3449 所高校的 25 个生活维度。
 项目名：`campus-life-query-skill`
 
+> 本项目基于 [University Info Skill](https://github.com/liliMozi/university-info-skill) 重构。
+
 数据来源：[CollegesChat/university-information](https://github.com/CollegesChat/university-information)
 
 > 数据仅供参考、娱乐和信息辅助，不代表任何学校或官方机构立场。
