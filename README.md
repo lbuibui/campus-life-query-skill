@@ -46,11 +46,13 @@ campus-life-query-skill/
 
 ---
 
-## 使用方式
+## 📦 安装方式
 
-### 作为 Claude Code Skill 使用
+在 Claude Code、Codex、OpenClaw 等支持 Skill 的 Agent 里，直接说：
 
-将 `campus-life-query-skill` 整个文件夹作为一个 Skill 安装。入口文件为 `SKILL.md`。
+> 帮我安装这个 skill：https://github.com/lbuibui/campus-life-query-skill
+
+Agent 会自己克隆 skill 到对应目录，不用操心路径。
 
 当用户询问大学生活、宿舍、空调、校园网、断电断网、食堂、门禁等内容时，根据 `SKILL.md` 中的说明调用对应数据。
 
