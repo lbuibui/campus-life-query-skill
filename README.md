@@ -32,12 +32,12 @@
 ## 目录结构
 
 ```text
-skill root/
+campus-life-query-skill/
 ├── SKILL.md                    # Skill 入口定义
 ├── README.md                   # 项目说明
 ├── LICENSE                     # CC BY-NC-SA 4.0 协议全文
 ├── NOTICE.md                   # 数据来源与署名说明
-├── assets/
+├── reasonix.toml               # Reasonix 配置
 └── references/
     ├── index.md                # 学校索引
     └── universities/           # 每所学校一个 Markdown 数据文件

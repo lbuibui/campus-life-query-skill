@@ -13,18 +13,13 @@ The university life quality data in `references/` is derived from and adapted fr
 
 ## Modifications
 
-This repository reorganizes and adapts the original dataset for use as a HanaAgent / OpenHanako Skill, including:
+This repository reorganizes and adapts the original dataset for use as a Claude Skill, including:
 
 - creating `SKILL.md` as the Agent instruction entry point;
 - organizing university information into local reference files;
 - adding an index for school lookup;
-- adding the UNTI university-life personality test page in `assets/UNTI-测试.html`;
-- adding personality-to-query mapping instructions;
-- adding radar-chart dimension analysis inside the UNTI test page.
 
-## Additional original content
-
-The UNTI personality test page, personality copywriting, interaction design, and character-result presentation are additional creative materials prepared for this Skill package.
+Data last refreshed from upstream on 2026-06-27 (generated branch).
 
 ## License inheritance
 

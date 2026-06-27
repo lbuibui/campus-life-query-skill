@@ -1,7 +1,7 @@
 # 大学索引
 
 > 数据来源：[CollegesChat/university-information](https://github.com/CollegesChat/university-information) (CC BY-NC-SA 4.0)
-> 共 3461 所学校（含分校区）
+> 共 3449 所学校（含分校区）
 
 当用户提到任何学校时，先在这里找到对应的文件名，再去 `universities/` 目录下读取该文件。
 
@@ -693,7 +693,6 @@
 | 齐齐哈尔大学 | 黑龙江 | qi-qi-ha-er-da-xue.md |
 | 齐齐哈尔工程学院 | 黑龙江 | qi-qi-ha-er-gong-cheng-xue-yuan.md |
 | 齐齐哈尔高等师范专科学校 | 黑龙江 | qi-qi-ha-er-gao-deng-shi-fan-zhuan-ke-xue-xiao.md |
-| -上海健康医学院 | 上海 | shang-hai-jian-kang-yi-xue-yuan-2.md |
 | 上海东海职业技术学院 | 上海 | shang-hai-dong-hai-zhi-ye-ji-zhu-xue-yuan.md |
 | 上海中侨职业技术大学 | 上海 | shang-hai-zhong-qiao-zhi-ye-ji-zhu-da-xue.md |
 | 上海中医药大学 | 上海 | shang-hai-zhong-yi-yao-da-xue.md |
@@ -2959,10 +2958,6 @@
 | 铁门关职业技术学院 | 新疆 | tie-men-guan-zhi-ye-ji-zhu-xue-yuan.md |
 | 阿勒泰职业技术学院 | 新疆 | a-le-tai-zhi-ye-ji-zhu-xue-yuan.md |
 | .山东省德州市庆云县云天职业技术学院 | 其他 | shan-dong-sheng-de-zhou-shi-qing-yun-xian-yun-tian-zhi-ye-ji-zhu-xue-yuan.md |
-| 1 | 其他 | 1.md |
-| 13322491139@163.com | 其他 | 13322491139-163-com.md |
-| 2 | 其他 | 2.md |
-| 2339535631@qq.com | 其他 | 2339535631-qq-com.md |
 | Asia Pacific University of Technology & Innovation APU | 其他 | asia-pacific-university-of-technology-innovation-apu.md |
 | Dalhousie University | 其他 | dalhousie-university.md |
 | Imperial College London | 其他 | imperial-college-london.md |
@@ -3020,7 +3015,6 @@
 | 九江职业技术大学 | 其他 | jiu-jiang-zhi-ye-ji-zhu-da-xue.md |
 | 云南工程职业技术学院 | 其他 | yun-nan-gong-cheng-zhi-ye-ji-zhu-xue-yuan.md |
 | 京津冀职教改革示范园区 | 其他 | jing-jin-ji-zhi-jiao-gai-ge-shi-fan-yuan-qu.md |
-| 人大附中深圳学校 | 其他 | ren-da-fu-zhong-shen-zhen-xue-xiao.md |
 | 伦敦国王学院 | 其他 | lun-dun-guo-wang-xue-yuan.md |
 | 保定市科技中等专业学校 | 其他 | bao-ding-shi-ke-ji-zhong-deng-zhuan-ye-xue-xiao.md |
 | 信阳师范大学 | 其他 | xin-yang-shi-fan-da-xue.md |
@@ -3030,7 +3024,6 @@
 | 共青科技职业学校 | 其他 | gong-qing-ke-ji-zhi-ye-xue-xiao.md |
 | 内蒙古化工职业技术学院 | 其他 | nei-meng-gu-hua-gong-zhi-ye-ji-zhu-xue-yuan.md |
 | 内蒙古建筑职业技术大学 | 其他 | nei-meng-gu-jian-zhu-zhi-ye-ji-zhu-da-xue.md |
-| 准大一 | 其他 | zhun-da-yi.md |
 | 加里敦大学 | 其他 | jia-li-dun-da-xue.md |
 | 包头医学院 | 其他 | bao-tou-yi-xue-yuan.md |
 | 北京电子信息技师学院 | 其他 | bei-jing-dian-zi-xin-xi-ji-shi-xue-yuan.md |
@@ -3042,7 +3035,6 @@
 | 南京铁道车辆技师学院 | 其他 | nan-jing-tie-dao-che-liang-ji-shi-xue-yuan.md |
 | 南充职业技术学校 | 其他 | nan-chong-zhi-ye-ji-zhu-xue-xiao.md |
 | 南加州大学 University of Southern California | 其他 | nan-jia-zhou-da-xue-university-of-southern-california.md |
-| 南宁八字 | 其他 | nan-zhu-ba-zi.md |
 | 南宁学校 | 其他 | nan-zhu-xue-xiao.md |
 | 南岳衡山道院南岳坤道学院 | 其他 | nan-yue-heng-shan-dao-yuan-nan-yue-kun-dao-xue-yuan.md |
 | 南方职业学院 | 其他 | nan-fang-zhi-ye-xue-yuan.md |
@@ -3069,7 +3061,6 @@
 | 哈尔滨职业技术大学 | 其他 | ha-er-bin-zhi-ye-ji-zhu-da-xue.md |
 | 唐山工业职业技术大学 | 其他 | tang-shan-gong-ye-zhi-ye-ji-zhu-da-xue.md |
 | 唐山工业职业职业技术学院 | 其他 | tang-shan-gong-ye-zhi-ye-zhi-ye-ji-zhu-xue-yuan.md |
-| 商丘市一中。 | 其他 | shang-qiu-shi-yi-zhong.md |
 | 嘉兴大学 | 其他 | jia-xing-da-xue.md |
 | 四川工程职业技术大学 | 其他 | si-chuan-gong-cheng-zhi-ye-ji-zhu-da-xue.md |
 | 四川托普信息职业技术学院 | 其他 | si-chuan-tuo-pu-xin-xi-zhi-ye-ji-zhu-xue-yuan.md |
@@ -3457,13 +3448,10 @@
 | 香港科技大学广州 | 其他 | xiang-gang-ke-ji-da-xue-yan-zhou.md |
 | 马德里自治大学Universidad Autónoma de Madrid | 其他 | ma-de-li-zi-zhi-da-xue-universidad-autonoma-de-madrid.md |
 | 马鞍山高等师范专科学校 | 其他 | ma-an-shan-gao-deng-shi-fan-zhuan-ke-xue-xiao.md |
-| 高中毕业，无学校 | 其他 | gao-zhong-bi-ye-wu-xue-xiao.md |
-| 高中还没读大学 | 其他 | gao-zhong-huan-mei-du-da-xue.md |
 | 鹤壁工程技术学院 | 其他 | he-bi-gong-cheng-ji-zhu-xue-yuan.md |
 | 鹤壁市信息工程学院 | 其他 | he-bi-shi-xin-xi-gong-cheng-xue-yuan.md |
 | 黄河水利职业学院 | 其他 | huang-he-shui-li-zhi-ye-xue-yuan.md |
 | 黄河水利职业技术大学 | 其他 | huang-he-shui-li-zhi-ye-ji-zhu-da-xue.md |
-| 黑大 | 其他 | hei-da.md |
 | 黑龙江外国语 | 其他 | hei-long-jiang-wai-guo-yu.md |
 | 黑龙江职业技术学院 | 其他 | hei-long-jiang-zhi-ye-ji-zhu-xue-yuan.md |
 | 黑龙江能源职业技术学院 | 其他 | hei-long-jiang-neng-yuan-zhi-ye-ji-zhu-xue-yuan.md |
