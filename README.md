@@ -39,7 +39,6 @@ campus-life-query-skill/
 ├── README.md                   # 项目说明
 ├── LICENSE                     # CC BY-NC-SA 4.0 协议全文
 ├── NOTICE.md                   # 数据来源与署名说明
-├── reasonix.toml               # Reasonix 配置
 └── references/
     ├── index.md                # 学校索引
     └── universities/           # 每所学校一个 Markdown 数据文件
@@ -49,7 +48,7 @@ campus-life-query-skill/
 
 ## 使用方式
 
-### 作为 Claude Skill 使用
+### 作为 Claude Code Skill 使用
 
 将 `campus-life-query-skill` 整个文件夹作为一个 Skill 安装。入口文件为 `SKILL.md`。
 
