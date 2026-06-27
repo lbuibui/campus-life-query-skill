@@ -4,10 +4,11 @@
 项目名：`campus-life-query-skill`
 
 > 本项目基于 [University Info Skill](https://github.com/liliMozi/university-info-skill) 重构。
-> 最后更新：2026-06-27
 
 数据来源：[CollegesChat/university-information](https://github.com/CollegesChat/university-information)
 
+> 最后更新：2026-06-27
+>
 > 数据仅供参考、娱乐和信息辅助，不代表任何学校或官方机构立场。
 
 ---
