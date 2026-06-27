@@ -4,6 +4,7 @@
 项目名：`campus-life-query-skill`
 
 > 本项目基于 [University Info Skill](https://github.com/liliMozi/university-info-skill) 重构。
+> 最后更新：2026-06-27
 
 数据来源：[CollegesChat/university-information](https://github.com/CollegesChat/university-information)
 
@@ -67,6 +68,7 @@ Agent 会自己克隆 skill 到对应目录，不用操心路径。
 - 原项目：CollegesChat / university-information
 - GitHub：https://github.com/CollegesChat/university-information
 - 数据分支：https://github.com/CollegesChat/university-information/tree/generated
+- 数据更新于：**2026-06-27**
 - 许可证：CC BY-NC-SA 4.0
 
 ---
