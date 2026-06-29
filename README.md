@@ -1,13 +1,13 @@
 # Campus Life Query Skill · 大学生活质量指北
 
-全国大学生活质量数据库 Skill，覆盖 3449 所高校的 25 个生活维度。
+全国大学生活质量数据库 Skill，覆盖 6154 所高校（含 3449 所活跃 + 2705 所历史归档）的 25 个生活维度。
 项目名：`campus-life-query-skill`
 
 > 本项目基于 [University Info Skill](https://github.com/liliMozi/university-info-skill) 重构。
 
 数据来源：[CollegesChat/university-information](https://github.com/CollegesChat/university-information)
 
-> 最后更新：2026-06-27
+> 最后更新：2026-06-29
 >
 > 数据仅供参考、娱乐和信息辅助，不代表任何学校或官方机构立场。
 
@@ -17,7 +17,7 @@
 
 ### 1. 大学生活质量查询
 
-支持查询 3449 所高校的真实生活条件，包括但不限于：
+支持查询 6154 所高校（3449 活跃 + 2705 归档）的真实生活条件，包括但不限于：
 
 - 宿舍是否上床下桌
 - 是否有空调
@@ -42,8 +42,11 @@ campus-life-query-skill/
 ├── LICENSE                     # CC BY-NC-SA 4.0 协议全文
 ├── NOTICE.md                   # 数据来源与署名说明
 └── references/
-    ├── index.md                # 学校索引
-    └── universities/           # 每所学校一个 Markdown 数据文件
+    ├── index.md                # 活跃学校索引（3449 所）
+    ├── universities/           # 每所学校一个 Markdown 数据文件
+    └── archived/
+        ├── index.md            # 已归档学校索引（2705 所）
+        └── universities/       # 2023 年前的归档数据
 ```
 
 ---
@@ -69,7 +72,9 @@ Agent 会自己克隆 skill 到对应目录，不用操心路径。
 - 原项目：CollegesChat / university-information
 - GitHub：https://github.com/CollegesChat/university-information
 - 数据分支：https://github.com/CollegesChat/university-information/tree/generated
-- 数据更新于：**2026-06-27**
+- 数据更新于：**2026-06-29**
+- 活跃数据（3449 所）：2023 年及之后提交
+- 归档数据（2705 所）：2023 年 1 月 1 日前提交，仅供参考
 - 许可证：CC BY-NC-SA 4.0
 
 ---

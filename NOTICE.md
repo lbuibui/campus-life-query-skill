@@ -19,7 +19,7 @@ This repository reorganizes and adapts the original dataset for use as a Claude 
 - organizing university information into local reference files;
 - adding an index for school lookup;
 
-Data last refreshed from upstream on 2026-06-27 (generated branch).
+Data last refreshed from upstream on 2026-06-29 (generated branch). Includes both active data (3449 schools, post-2023) and archived data (2705 schools, pre-2023).
 
 ## License inheritance
 
