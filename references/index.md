@@ -26,7 +26,6 @@
 | 上海商学院 | 上海 | shang-hai-shang-xue-yuan.md |
 | 上海商学院赤峰路 | 上海 | shang-hai-shang-xue-yuan-chi-feng-lu.md |
 | 上海城建职业学院 | 上海 | shang-hai-cheng-jian-zhi-ye-xue-yuan.md |
-| 上海城建职业学院 我目前在奉贤校区 提供的是奉贤校区的信息哦 | 上海 | shang-hai-cheng-jian-zhi-ye-xue-yuan-wo-mu-qian-zai-feng-xian-xiao-qu-ti-gong-de-shi-feng-xian-xiao-qu-de-xin-xi-e.md |
 | 上海城建职业学院奉贤校区 | 上海 | shang-hai-cheng-jian-zhi-ye-xue-yuan-feng-xian-xiao-qu.md |
 | 上海外国语大学 | 上海 | shang-hai-wai-guo-yu-da-xue.md |
 | 上海外国语大学贤达经济人文学院 | 上海 | shang-hai-wai-guo-yu-da-xue-xian-da-jing-ji-ren-wen-xue-yuan.md |
@@ -149,7 +148,7 @@
 | 内蒙古农业大学职业技术学院 | 内蒙古 | nei-meng-gu-nong-ye-da-xue-zhi-ye-ji-zhu-xue-yuan.md |
 | 内蒙古化工职业学院 | 内蒙古 | nei-meng-gu-hua-gong-zhi-ye-xue-yuan.md |
 | 内蒙古医科大学 | 内蒙古 | nei-meng-gu-yi-ke-da-xue.md |
-| 内蒙古医科大学金山校区{我的回答仅限金山校区} | 内蒙古 | nei-meng-gu-yi-ke-da-xue-jin-shan-xiao-qu-wo-de-hui-da-jin-xian-jin-shan-xiao-qu.md |
+| 内蒙古医科大学金山校区 | 内蒙古 | nei-meng-gu-yi-ke-da-xue-jin-shan-xiao-qu.md |
 | 内蒙古大学 | 内蒙古 | nei-meng-gu-da-xue.md |
 | 内蒙古大学创业学院 | 内蒙古 | nei-meng-gu-da-xue-chuang-ye-xue-yuan.md |
 | 内蒙古大学北校区 | 内蒙古 | nei-meng-gu-da-xue-bei-xiao-qu.md |
@@ -259,7 +258,7 @@
 | 北京电影学院怀柔校区 | 北京 | bei-jing-dian-ying-xue-yuan-huai-rou-xiao-qu.md |
 | 北京石油化工学院 | 北京 | bei-jing-shi-you-hua-gong-xue-yuan.md |
 | 北京科技大学 | 北京 | bei-jing-ke-ji-da-xue.md |
-| 北京科技大学全称是这个，但是我人在海淀本部校区，一般不写校区，还分其他昌平校区，管庄校区，这个一般写北京科技大学昌平/管庄校区 | 北京 | bei-jing-ke-ji-da-xue-quan-cheng-shi-zhe-ge-dan-shi-wo-ren-zai-hai-dian-ben-bu-xiao-qu-yi-ban-bu-xie-xiao-qu-huan-fen-qi-ta-chang-ping-xiao-qu-guan-zhuang-xiao-qu-zhe-ge-yi-ban-xie-bei-jing-ke-ji-da-xue-chang-ping-guan-zhuang-xiao-qu.md |
+| 北京科技大学昌平/管庄校区 | 北京 | bei-jing-ke-ji-da-xue-chang-ping-guan-zhuang-xiao-qu.md |
 | 北京第二外国语学院 | 北京 | bei-jing-di-er-wai-guo-yu-xue-yuan.md |
 | 北京第二外国语学院中瑞酒店管理学院 | 北京 | bei-jing-di-er-wai-guo-yu-xue-yuan-zhong-rui-jiu-dian-guan-li-xue-yuan.md |
 | 北京经济管理职业学院 | 北京 | bei-jing-jing-ji-guan-li-zhi-ye-xue-yuan.md |
@@ -1022,7 +1021,6 @@
 | 北京师范大学-香港浸会大学联合国际学院 | 广东 | bei-jing-shi-fan-da-xue-xiang-gang-jin-hui-da-xue-lian-he-guo-ji-xue-yuan.md |
 | 北京师范大学珠海校区 | 广东 | bei-jing-shi-fan-da-xue-zhu-hai-xiao-qu.md |
 | 北京理工大学珠海学院 | 广东 | bei-jing-li-gong-da-xue-zhu-hai-xue-yuan.md |
-| 北京理工大学珠海学院我是最后一届了，已经改为北京理工大学珠海了 | 广东 | bei-jing-li-gong-da-xue-zhu-hai-xue-yuan-wo-shi-zui-hou-yi-jie-liao-yi-jing-gai-wei-bei-jing-li-gong-da-xue-zhu-hai-liao.md |
 | 华南农业大学 | 广东 | hua-nan-nong-ye-da-xue.md |
 | 华南农业大学珠江学院 | 广东 | hua-nan-nong-ye-da-xue-zhu-jiang-xue-yuan.md |
 | 华南师范大学 | 广东 | hua-nan-shi-fan-da-xue.md |
@@ -1312,7 +1310,6 @@
 | 桂林理工大学雁山校区 | 广西 | gui-lin-li-gong-da-xue-yan-shan-xiao-qu.md |
 | 桂林电子科技大学 | 广西 | gui-lin-dian-zi-ke-ji-da-xue.md |
 | 桂林电子科技大学北海校区 | 广西 | gui-lin-dian-zi-ke-ji-da-xue-bei-hai-xiao-qu.md |
-| 桂林电子科技大学北海校区/广西海洋学院即将转设的新名字 | 广西 | gui-lin-dian-zi-ke-ji-da-xue-bei-hai-xiao-qu-yan-xi-hai-yang-xue-yuan-ji-jiang-zhuan-she-de-xin-ming-zi.md |
 | 桂林电子科技大学花江校区 | 广西 | gui-lin-dian-zi-ke-ji-da-xue-hua-jiang-xiao-qu.md |
 | 桂林航天工业学院 | 广西 | gui-lin-hang-tian-gong-ye-xue-yuan.md |
 | 梧州医学高等专科学校 | 广西 | wu-zhou-yi-xue-gao-deng-zhuan-ke-xue-xiao.md |
@@ -1572,7 +1569,7 @@
 | 华东交通大学 | 江西 | hua-dong-jiao-tong-da-xue.md |
 | 华东交通大学军山湖校区 | 江西 | hua-dong-jiao-tong-da-xue-jun-shan-hu-xiao-qu.md |
 | 南昌交通学院 | 江西 | nan-chang-jiao-tong-xue-yuan.md |
-| 南昌交通学院，以下回答默认墨轩湖校区 | 江西 | nan-chang-jiao-tong-xue-yuan-yi-xia-hui-da-mo-ren-mo-xuan-hu-xiao-qu.md |
+| 南昌交通学院墨轩湖校区 | 江西 | nan-chang-jiao-tong-xue-yuan-mo-xuan-hu-xiao-qu.md |
 | 南昌健康职业技术学院 | 江西 | nan-chang-jian-kang-zhi-ye-ji-zhu-xue-yuan.md |
 | 南昌医学院 | 江西 | nan-chang-yi-xue-yuan.md |
 | 南昌医学院九龙湖校区 | 江西 | nan-chang-yi-xue-yuan-jiu-long-hu-xiao-qu.md |
@@ -2381,7 +2378,6 @@
 | 衡阳幼儿师范高等专科学校 | 湖南 | heng-yang-you-er-shi-fan-gao-deng-zhuan-ke-xue-xiao.md |
 | 邵阳学院 | 湖南 | shao-yang-xue-yuan.md |
 | 邵阳学院李子园校区 | 湖南 | shao-yang-xue-yuan-li-zi-yuan-xiao-qu.md |
-| 邵阳学院李子园校区食品与化学工程学院，音乐与舞蹈学院，文学院，外国语学院在这个校区很小但很方便并且市中心近 | 湖南 | shao-yang-xue-yuan-li-zi-yuan-xiao-qu-shi-pin-yu-hua-xue-gong-cheng-xue-yuan-yin-le-yu-wu-dao-xue-yuan-wen-xue-yuan-wai-guo-yu-xue-yuan-zai-zhe-ge-xiao-qu-hen-xiao-dan-hen-fang-bian-bing-qie-shi-zhong-xin-jin.md |
 | 郴州职业技术学院 | 湖南 | chen-zhou-zhi-ye-ji-zhu-xue-yuan.md |
 | 长沙医学院 | 湖南 | chang-sha-yi-xue-yuan.md |
 | 长沙医学院长沙校区 | 湖南 | chang-sha-yi-xue-yuan-chang-sha-xiao-qu.md |
@@ -2599,7 +2595,7 @@
 | 东北财经大学 | 辽宁 | dong-bei-cai-jing-da-xue.md |
 | 中国刑事警察学院 | 辽宁 | zhong-guo-xing-shi-jing-cha-xue-yuan.md |
 | 中国医科大学 | 辽宁 | zhong-guo-yi-ke-da-xue.md |
-| 中国医科大学，下面要说的都是沈北校区，和平校区不清楚 | 辽宁 | zhong-guo-yi-ke-da-xue-xia-mian-yao-shuo-de-du-shi-chen-bei-xiao-qu-he-ping-xiao-qu-bu-qing-chu.md |
+| 中国医科大学沈北校区 | 辽宁 | zhong-guo-yi-ke-da-xue-shen-bei-xiao-qu.md |
 | 大连东软信息学院 | 辽宁 | da-lian-dong-ruan-xin-xi-xue-yuan.md |
 | 大连交通大学 | 辽宁 | da-lian-jiao-tong-da-xue.md |
 | 大连交通大学旅顺校区 | 辽宁 | da-lian-jiao-tong-da-xue-lu-shun-xiao-qu.md |
@@ -3135,7 +3131,7 @@
 | 广州华夏 | 其他 | yan-zhou-hua-xia.md |
 | 广州华立科技职业技术学校 | 其他 | yan-zhou-hua-li-ke-ji-zhi-ye-ji-zhu-xue-xiao.md |
 | 广州华立科技职业技术学院 | 其他 | yan-zhou-hua-li-ke-ji-zhi-ye-ji-zhu-xue-yuan.md |
-| 广州南沙民心港人子弟学校 | 其他 | yan-zhou-nan-sha-min-xin-gang-ren-zi-di-xue-xiao.md |
+| 广州南沙民心港人子弟学校 | 其他 | guang-zhou-nan-sha-min-xin-gang-ren-zi-di-xue-xiao.md |
 | 广州外语外贸南国商学院 | 其他 | yan-zhou-wai-yu-wai-mao-nan-guo-shang-xue-yuan.md |
 | 广州市从化区职业技术学校 | 其他 | yan-zhou-shi-cong-hua-qu-zhi-ye-ji-zhu-xue-xiao.md |
 | 广州市财经商贸职业技术学校 | 其他 | yan-zhou-shi-cai-jing-shang-mao-zhi-ye-ji-zhu-xue-xiao.md |
@@ -3307,7 +3303,6 @@
 | 烟台城市科技职业学院 | 其他 | yan-tai-cheng-shi-ke-ji-zhi-ye-xue-yuan.md |
 | 焦作师范高等专科 | 其他 | jiao-zuo-shi-fan-gao-deng-zhuan-ke.md |
 | 焦作新材料职业学院 | 其他 | jiao-zuo-xin-cai-liao-zhi-ye-xue-yuan.md |
-| 牛马克思列宁主义 | 其他 | niu-ma-ke-si-lie-zhu-zhu-yi.md |
 | 牡丹江医科大学 | 其他 | mu-dan-jiang-yi-ke-da-xue.md |
 | 珠海市卫生学校 | 其他 | zhu-hai-shi-wei-sheng-xue-xiao.md |
 | 珠海市技师学院 | 其他 | zhu-hai-shi-ji-shi-xue-yuan.md |
