@@ -26,7 +26,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Polarity + query unit tests (stdlib unittest)
+      - name: Unit tests (stdlib unittest)
         run: python -m unittest discover -s tests -v
       - name: Polarity regression samples
         run: python tools/query.py --selftest
@@ -52,11 +52,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Maintenance scripts converge (idempotency)
-        run: |
-          python tools/consolidate.py --check
-          python tools/redact.py --check
-          python tools/build_aliases.py --check
-          python tools/patch_index.py --check
+      - name: Index matches data mirror (rebuild + content digest)
+        run: python tools/build_db.py --check
       - name: Dataset integrity regression
         run: python tools/verify.py --quiet
