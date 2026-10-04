@@ -4,11 +4,14 @@
 
 数据来源：[CollegesChat/university-information](https://github.com/CollegesChat/university-information) (CC BY-NC-SA 4.0)
 
-数据更新日期：2026-07-07
+数据更新日期：2026-09-19
+上游版本（generated 分支）：0abf14dfc897
 
-共 2705 所已归档学校（含分校区），覆盖 32 个省份/地区。
+共 2705 所已归档学校（含分校区），覆盖 31 个省级行政区（另有 219 所标为「其他」）。
 
 当用户询问历史数据或未在活跃索引中找到某学校时，可先在本索引中搜索确认文件名，再读取 `references/archived/universities/` 目录下对应文件。
+
+> 说明：本目录文件的「数据来源」列表已脱敏（见 `tools/redact.py`），答复时仍需注明数据为 2023 年前、条件可能已过时。
 
 | 学校名 | 省份 | 文件 |
 |--------|------|------|

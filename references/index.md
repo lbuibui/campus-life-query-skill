@@ -6,7 +6,10 @@
 
 共 3449 所学校（含分校区），覆盖 32 个省份/地区。
 
-当用户提到任何学校名称（含别名、简称）时，先在本索引中用 grep 搜索确定文件名，再读取对应目录下文件。
+当用户提到学校名称时，先用 `references/aliases.md` grep 简称/别名；本索引只收录中文全称，可用全称或关键词 grep 确定文件名，再读取对应目录下文件。
+
+> 说明：本文件的「数据来源」列表已脱敏，原问卷填写者留下的邮箱等标识统一替换为「实名反馈者 N」。
+> 索引中标注「上游原始简称，未识别出学校」的条目（`tj`、`xn`、`swpu`）保留上游原始标识，未做猜测性改名。
 
 | 学校名 | 省份 | 文件 |
 |--------|------|------|
@@ -2960,7 +2963,7 @@
 | 石河子大学护士学校 | 新疆 | shi-he-zi-da-xue-hu-shi-xue-xiao.md |
 | 铁门关职业技术学院 | 新疆 | tie-men-guan-zhi-ye-ji-zhu-xue-yuan.md |
 | 阿勒泰职业技术学院 | 新疆 | a-le-tai-zhi-ye-ji-zhu-xue-yuan.md |
-| .山东省德州市庆云县云天职业技术学院 | 其他 | shan-dong-sheng-de-zhou-shi-qing-yun-xian-yun-tian-zhi-ye-ji-zhu-xue-yuan.md |
+| 山东省德州市庆云县云天职业技术学院 | 其他 | shan-dong-sheng-de-zhou-shi-qing-yun-xian-yun-tian-zhi-ye-ji-zhu-xue-yuan.md |
 | Asia Pacific University of Technology & Innovation APU | 其他 | asia-pacific-university-of-technology-innovation-apu.md |
 | Dalhousie University | 其他 | dalhousie-university.md |
 | Imperial College London | 其他 | imperial-college-london.md |
@@ -2988,10 +2991,10 @@
 | Virginia Tech | 其他 | virginia-tech.md |
 | Ying T'ien University,Taiwan | 其他 | ying-t-ien-university-taiwan.md |
 | miskatonic university | 其他 | miskatonic-university.md |
-| swpu | 其他 | swpu.md |
-| tj | 其他 | tj.md |
+| swpu | 其他 | swpu.md | 上游原始简称，未识别出学校，数据仅 1 条回答 |
+| tj | 其他 | tj.md | 上游原始简称，未识别出学校，数据仅 1 条回答 |
 | uts 悉尼科技 | 其他 | uts-xi-ni-ke-ji.md |
-| xn | 其他 | xn.md |
+| xn | 其他 | xn.md | 上游原始简称，未识别出学校，数据仅 1 条回答 |
 | ДВФУ | 其他 | dvfu.md |
 | 三亚皇家帝国学院 | 其他 | san-ya-huang-jia-di-guo-xue-yuan.md |
 | 上海体育大学 | 其他 | shang-hai-ti-yu-da-xue.md |
