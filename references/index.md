@@ -2,14 +2,16 @@
 
 数据来源：[CollegesChat/university-information](https://github.com/CollegesChat/university-information) (CC BY-NC-SA 4.0)
 
-数据更新日期：2026-07-07
+数据更新日期：2026-09-19
+上游版本（generated 分支）：0abf14dfc897
 
-共 3449 所学校（含分校区），覆盖 32 个省份/地区。
+共 3448 所学校（含分校区）：中国大陆 31 个省级行政区，另有 499 所标为「其他」（多为海外院校或上游未能归类的学校）。
 
 当用户提到学校名称时，先用 `references/aliases.md` grep 简称/别名；本索引只收录中文全称，可用全称或关键词 grep 确定文件名，再读取对应目录下文件。
 
 > 说明：本文件的「数据来源」列表已脱敏，原问卷填写者留下的邮箱等标识统一替换为「实名反馈者 N」。
 > 索引中标注「上游原始简称，未识别出学校」的条目（`tj`、`xn`、`swpu`）保留上游原始标识，未做猜测性改名。
+> 上游曾有 1 个 69 字符乱码文件名（问卷者把校名变更说明填进校名字段），其 2026 年回答已归并进「广东轻工职业技术大学」，详见 `tools/consolidate.py`。
 
 | 学校名 | 省份 | 文件 |
 |--------|------|------|
@@ -2148,7 +2150,6 @@
 | 华南理工大学广州国际校区 | 广东 | hua-nan-li-gong-da-xue-yan-zhou-guo-ji-xiao-qu.md |
 | 南方医科大学 | 广东 | nan-fang-yi-ke-da-xue.md |
 | 南方科技大学 | 广东 | nan-fang-ke-ji-da-xue.md |
-| 原校名：广东轻工职业技术学院学校升本了，校名改为广东轻工职业技术大学 | 广东 | yuan-xiao-ming-yan-dong-qing-gong-zhi-ye-ji-zhu-xue-yuan-xue-xiao-sheng-ben-liao-xiao-ming-gai-wei-yan-dong-qing-gong-zhi-ye-ji-zhu-da-xue.md |
 | 哈尔滨工业大学深圳校区 | 广东 | ha-er-bin-gong-ye-da-xue-shen-zhen-xiao-qu.md |
 | 嘉应学院 | 广东 | jia-ying-xue-yuan.md |
 | 嘉应学院医学院 | 广东 | jia-ying-xue-yuan-yi-xue-yuan.md |
