@@ -1258,7 +1258,7 @@ A3624: 武汉科技大学，算是挺好的学校了，虽然没有那么出名�
 
 A3656: 已经很好，基本上不会坑你
 
-图片见[Base64]56eR5a2m6K6/6ZeuOiBodHRwczovL3QubWUvd3VzdF9kb3JtaXRvcnk=
+图片见[Base64][已脱敏的编码内容]
 
 (管理员麻烦传一下图片, 逃)
 

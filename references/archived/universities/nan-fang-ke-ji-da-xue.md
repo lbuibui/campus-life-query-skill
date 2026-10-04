@@ -2041,7 +2041,7 @@ A1300: 通用Knowledge Base请参考：https://sustech.online/
 
 学校非官方新闻请参考：https://nanke.suste.ch/ https://news.nanke.suste.ch/
 
-学校负面新闻请参考：https://t.me/SUSTechGG
+学校负面新闻请参考：[Telegram已脱敏]
 
 ***
 

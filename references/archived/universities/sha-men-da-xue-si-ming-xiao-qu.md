@@ -230,4 +230,4 @@ A6306: 厦大舒适度真的一流，冲冲冲
 
 A6642: 欢迎加入厦门大学的Telegram非官方频道
 
-https://t.me/xiamen\_university
+[Telegram已脱敏]\_university
