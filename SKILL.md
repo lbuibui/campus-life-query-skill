@@ -14,14 +14,17 @@ skill root/
 ├── SKILL.md                          ← 你正在读的文件
 ├── tools/                            ← 可选的结构化查询与维护脚本
 │   ├── query.py                      ← 结构化查询 / 反向筛选（推荐用于筛选类问题）
+│   ├── polarity.py                   ← 按 25 个问题区分的极性判定器
 │   ├── build_aliases.py              ← 重建 references/aliases.md
 │   ├── redact.py                     ← 来源列表 + 正文个人信息脱敏（同步上游后运行）
 │   ├── consolidate.py                ← 归并上游错放条目（同步上游后运行）
 │   ├── patch_index.py                ← 施加索引本地修正（幂等）
-│   └── verify.py                     ← 数据完整性回归校验（同步上游后运行）
+│   ├── verify.py                     ← 数据完整性回归校验（同步上游后运行）
+│   └── check_all.sh                  ← 一键跑测试 + 全部检查
+├── tests/                            ← 单元测试（unittest / pytest）
 └── references/
     ├── index.md                      ← 活跃学校索引（学校名 → 省份 → 文件名，3448 所）
-    ├── aliases.md                    ← 别名/简称索引（2829 条 → 学校名 → 文件名）
+    ├── aliases.md                    ← 别名/简称索引（2827 条 + 歧义简称，→ 学校名 → 文件名）
     ├── sync-log.md                   ← 上游同步台账（每次同步的上游 SHA 与结果）
     ├── universities/                 ← 每校一个 .md 文件（拼音命名）
     └── archived/
@@ -86,7 +89,7 @@ grep "北邮" references/aliases.md
 → 读取 references/universities/bei-jing-you-dian-da-xue.md
 ```
 
-别名表只收录唯一指向一所学校的别名；会指向多校的简称（如「地大」「华师」）不在表内，遇到时先向用户确认是哪一所。
+别名表只收录唯一指向一所学校的别名；会指向多校的简称（如「地大」「华师」「华农」「中国地质大学」「中国石油大学」）不在表内，而是列在 `aliases.md` 末尾的「歧义简称」表里。`python3 tools/query.py <简称>` 命中这类简称时会直接列出候选并退出（退出码 2）；此时不要再猜，向用户确认是哪一所（若无法运行脚本，则查「歧义简称」表人工澄清）。
 
 ### 1. 按学校查询
 
@@ -129,7 +132,12 @@ python3 tools/query.py --reverse 独立卫浴 --polarity yes --min-yes 3
 python3 tools/query.py --reverse 空调 --polarity yes --include-archived
 ```
 
-输出是「肯定 / 否定 / 分化 / 总回答」的计数表。**必须**向用户说明这些计数是回答者的说法条数，不是官方事实；对入围学校再用 `python3 tools/query.py <学校> --q <维度>` 读取原文。
+输出是「肯定 / 否定 / 分化 / 总回答 / 命中维度」的计数表，并根据问题打印判定口径
+（例如 `no = 不会断电断网`）。当一个关键词命中多个问题（如「宿舍」→ 7 个问题）时，
+结果按学校归并，报的是**唯一学校数**，「命中维度」列表示该校命中了几个问题；
+并注意 `mixed` 类不计入 yes/no。极性判定按 25 个问题各自维护语义规格，不再是
+通用词表，但仍是文本启发式；**必须**向用户说明这些计数是回答者的说法条数，不是
+官方事实；对入围学校再用 `python3 tools/query.py <学校> --q <维度>` 读取原文。
 
 若环境无法运行脚本，退回手工流程，并遵守两条硬约束：
 
@@ -168,9 +176,11 @@ python3 tools/query.py --compare 北邮 华科 电子科技大学 --q 空调
 
 ## 维护脚本（可选）
 
-仅在需要更新数据或校验时使用：
+仅在需要更新数据或校验时使用；提交前可一键跑完：
 
 ```bash
+./tools/check_all.sh                    # 单元测试 + 极性回归 + 幂等检查 + 完整性校验
+python3 -m unittest discover -s tests   # 单元测试（判定器 + 解析）
 python3 tools/verify.py                 # 数据完整性校验，0 失败即正常
 python3 tools/verify.py --quiet         # 只输出警告、失败项与汇总
 python3 tools/consolidate.py --check    # 检查上游是否有错放条目需归并

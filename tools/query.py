@@ -7,7 +7,8 @@
 行级匹配无法区分「这所学校不断电」和「这所学校有人提到断电」。
 
 本工具改为：先定位问题区块 → 逐条解析回答 → 做极性分类 → 按校区/年份归组
-输出，并把「分化/分校区」单独标出。宁可标为「其他」，也不替用户断言。
+输出，并把「分化/分校区」单独标出。极性判定已独立到 `polarity.py`，按 25
+个问题各自的语义规格判定（而不是通用词表），详见该模块文档。
 
 用法：
     # 单校
@@ -34,6 +35,9 @@ import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
+import polarity
+from polarity import classify  # 兼容旧调用：query.classify(text) 走通用规格
+
 ROOT = Path(__file__).resolve().parent.parent
 REF = ROOT / "references"
 ACTIVE_DIR = REF / "universities"
@@ -43,66 +47,13 @@ ARCHIVE_INDEX = REF / "archived" / "index.md"
 ALIASES = REF / "aliases.md"
 
 # ---------------------------------------------------------------------------
-# 25 个标准问题的关键词路由表
+# 25 个标准问题的关键词路由表（问题语义规格见 polarity.py）
 # ---------------------------------------------------------------------------
+CANONICAL_HEADINGS = list(polarity.CANONICAL_HEADINGS)
+N_QUESTIONS = polarity.N_QUESTIONS
 QUESTIONS: list[tuple[int, str, tuple[str, ...]]] = [
-    (1, "宿舍是上床下桌吗", ("上床下桌", "床", "宿舍", "上床", "上下铺")),
-    (2, "教室和宿舍有没有空调", ("空调",)),
-    (3, "有独立卫浴吗，澡堂离宿舍多远", ("卫浴", "澡堂", "浴室", "洗澡间", "独卫")),
-    (4, "有早自习、晚自习吗", ("自习", "早读")),
-    (5, "有晨跑吗", ("晨跑", "早操", "跑操")),
-    (6, "跑步打卡要求多少公里，可以骑车吗", ("跑步", "打卡", "公里", "骑车", "乐跑", "步道乐跑")),
-    (7, "寒暑假放多久，小学期多长", ("寒暑假", "暑假", "寒假", "小学期", "假期")),
-    (8, "允许点外卖吗，取外卖多远", ("外卖",)),
-    (9, "交通便利吗，有地铁吗，在市区吗", ("交通", "地铁", "进城", "市区", "公交")),
-    (10, "宿舍楼有洗衣机吗", ("洗衣机",)),
-    (11, "校园网怎么样", ("校园网", "网络", "wifi", "WIFI", "宽带")),
-    (12, "每天断电断网吗，几点开始断", ("断电", "断网", "熄灯")),
-    (13, "食堂价格贵吗，会吃出异物吗", ("食堂", "异物", "饭菜", "吃饭")),
-    (14, "洗澡热水供应时间", ("热水", "供水")),
-    (15, "校园内可以骑电瓶车吗，电池在哪充电", ("电瓶车", "电动车", "充电")),
-    (16, "宿舍限电情况", ("限电", "跳闸", "功率")),
-    (17, "通宵自习有去处吗", ("通宵",)),
-    (18, "大一能带电脑吗", ("电脑",)),
-    (19, "学校里面用什么卡，饭堂怎样消费", ("校园卡", "饭卡", "一卡通", "刷卡")),
-    (20, "学校会给学生发银行卡吗", ("银行卡",)),
-    (21, "学校的超市怎么样", ("超市", "小卖部")),
-    (22, "学校的收发快递政策怎么样", ("快递", "收发", "菜鸟")),
-    (23, "学校里面的共享单车数目与种类如何", ("共享单车", "单车", "哈啰", "美团单车")),
-    (24, "现阶段学校的门禁情况如何", ("门禁", "查证", "刷脸", "出入")),
-    (25, "宿舍晚上查寝吗，封寝吗，晚归能回去吗", ("查寝", "封寝", "晚归")),
+    (s.qid, s.heading(), polarity.KEYWORDS[s.qid]) for s in polarity.SPECS
 ]
-
-# 25 个问题在数据文件中的规范标题（`## Q: …？`）。编号 --q N 按此表精确匹配，
-# 不走关键词模糊匹配。注意：必须与 tools/verify.py 的 CANONICAL_HEADINGS 保持一致。
-CANONICAL_HEADINGS = [
-    "宿舍是上床下桌吗？",
-    "教室和宿舍有没有空调？",
-    "有独立卫浴吗？没有独立浴室的话，澡堂离宿舍多远？",
-    "有早自习、晚自习吗？",
-    "有晨跑吗？",
-    "每学期跑步打卡的要求是多少公里，可以骑车吗？",
-    "寒暑假放多久，每年小学期有多长？",
-    "学校允许点外卖吗，取外卖的地方离宿舍楼多远？",
-    "学校交通便利吗，有地铁吗，在市区吗，不在的话进城要多久？",
-    "宿舍楼有洗衣机吗？",
-    "校园网怎么样？",
-    "每天断电断网吗，几点开始断？",
-    "食堂价格贵吗，会吃出异物吗？",
-    "洗澡热水供应时间？",
-    "校园内可以骑电瓶车吗，电池在哪能充电？",
-    "宿舍限电情况？",
-    "通宵自习有去处吗？",
-    "大一能带电脑吗？",
-    "学校里面用什么卡，饭堂怎样消费？",
-    "学校会给学生发银行卡吗？",
-    "学校的超市怎么样？",
-    "学校的收发快递政策怎么样？",
-    "学校里面的共享单车数目与种类如何？",
-    "现阶段学校的门禁情况如何？",
-    "宿舍晚上查寝吗，封寝吗，晚归能回去吗？",
-]
-N_QUESTIONS = len(CANONICAL_HEADINGS)
 
 
 def _norm_heading(heading: str) -> str:
@@ -111,40 +62,6 @@ def _norm_heading(heading: str) -> str:
     if h.startswith("Q:"):
         h = h[2:]
     return h.strip().rstrip("？?").strip()
-
-# 极性词典。NEG_FIRST 内部的短语本身含否定词，必须先于 NEG_TOKENS 判断。
-NEG_FIRST = (
-    "不断电", "不会断电", "不断网", "不会断网", "不查寝", "不封寝", "不封",
-    "不限电", "不查", "不用", "不需要", "不允许", "不能骑", "不可以",
-    "不可以点", "不能点", "不贵", "不便宜", "不难", "不严", "不熄灯",
-    "不晚归", "不查卫生", "不打卡",
-)
-# 含「不/没」但实际不是否定该问题的说法，先从否定判断中排除
-NOT_A_NEGATION = (
-    "不计入", "不收费", "不要钱", "不花钱", "不包括", "不算", "不止",
-    "不过", "不管", "不一定", "不固定", "不到", "不多", "不少",
-    "不错", "不卡", "不差", "不赖",
-)
-# 含「不/无/有/发/多」等字但语义中性的词，做极性判断前先剔除，
-# 否则「无线」「发现」「多久」会被误当成否定/肯定信号
-NEUTRALIZE = ("无线", "发现", "出发", "沙发", "头发", "多少", "多久",
-              "附近", "最近", "将近", "所有")
-NEG_TOKENS = ("没有", "無", "无法", "不能", "不让", "不允许", "不给", "不是", "否", "无", "未", "没", "不")
-POS_TOKENS = (
-    "有", "是", "可以", "能", "允许", "提供", "配备", "支持", "发", "给",
-    "方便", "免费", "充足", "多", "好", "便利", "近", "便宜",
-)
-HEDGE_TOKENS = (
-    "部分", "有的", "有些", "看", "分校区", "不同", "一半", "多数", "少数",
-    "有的校区", "各校区", "视", "取决于", "但", "不过", "然而", "但是",
-    "有时", "好像", "勉强",
-)
-# 反问 / 语义不明：含这些标记时不做极性断言，交回原文给人判断
-QUERY_TOKENS = (
-    "什么是", "什么叫", "哪来", "哪有", "吗？", "吗?", "呢？", "呢?",
-    "？", "?", "不清楚", "不知道", "忘了", "记不清", "据说", "听说",
-    "答非所问", "无意义", "不懂",
-)
 
 
 def load_index(path: Path) -> list[tuple[str, str, str]]:
@@ -161,16 +78,16 @@ def load_index(path: Path) -> list[tuple[str, str, str]]:
     return rows
 
 
-def load_aliases() -> dict[str, tuple[str, str]]:
+def load_aliases(path: Path = ALIASES) -> dict[str, tuple[str, str]]:
     """别名 -> (学校名, 文件名)。
 
     这里用 setdefault 处理重复别名；别名表的唯一性由 build_aliases.py 保证、
     并由 verify.py 强制检查（重复别名会让 verify.py 失败），因此不会静默取错。
     """
     out: dict[str, tuple[str, str]] = {}
-    if not ALIASES.exists():
+    if not path.exists():
         return out
-    for line in ALIASES.read_text(encoding="utf-8").splitlines():
+    for line in path.read_text(encoding="utf-8").splitlines():
         if not line.startswith("| "):
             continue
         cells = [c.strip() for c in line.strip().strip("|").split("|")]
@@ -182,17 +99,55 @@ def load_aliases() -> dict[str, tuple[str, str]]:
     return out
 
 
+def load_ambiguous(path: Path = ALIASES) -> dict[str, tuple[str, ...]]:
+    """读取 aliases.md 末尾的「歧义简称」小表：简称 -> 候选学校名。
+
+    该表由 build_aliases.py 生成，是两列表格（简称 | 候选学校），不会被
+    load_aliases 的 4 列解析误收。解析不到时返回空字典。
+    """
+    out: dict[str, tuple[str, ...]] = {}
+    if not path.exists():
+        return out
+    in_section = False
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.startswith("## "):
+            in_section = "歧义" in line
+            continue
+        if not in_section or not line.startswith("| "):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) < 2 or cells[0] == "简称" or set(cells[0]) <= set("-: "):
+            continue
+        names = tuple(n for n in re.split(r"[；;、,，]", cells[1]) if n)
+        if len(names) >= 2:
+            out[cells[0]] = names
+    return out
+
+
 def resolve(query: str, aliases: dict[str, tuple[str, str]],
-            active: list[tuple[str, str, str]], archived: list[tuple[str, str, str]]) -> list[dict]:
+            active: list[tuple[str, str, str]], archived: list[tuple[str, str, str]],
+            ambiguous: dict[str, tuple[str, ...]] | None = None) -> list[dict]:
     """把用户输入（全称/简称/文件名）解析为候选学校。
 
-    顺序**有意**为先别名、后全称（与 SKILL.md 第 0 步一致）：别名表由
-    build_aliases.py 保证「任何别名的文字都不等于另一所真实学校全称」，因此
-    不会劫持全称查询；少数指向「上游简称占位条目」的别名（如「川农」「东华理工」）
-    正是要优先命中真实学校。该不变式由 build_aliases.py 的兜底与 verify.py 的
-    别名检查共同守护，若被破坏 verify.py 会直接失败。
+    顺序**有意**为先歧义词、后唯一别名、最后全称（与 SKILL.md 第 0 步一致）：
+    唯一别名表由 build_aliases.py 保证「任何别名的文字都不等于另一所真实学校
+    全称」，因此不会劫持全称查询；少数指向「上游简称占位条目」的别名（如
+    「川农」「东华理工」）正是要优先命中真实学校。歧义简称（地大/华师/华农/
+    中国地质大学/中国石油大学）不猜学校，直接返回多个候选交由调用方提示澄清。
+    该不变式由 build_aliases.py 的兜底与 verify.py 的别名检查共同守护。
     """
     q = query.strip()
+    if ambiguous and q in ambiguous:
+        cands: list[dict] = []
+        for name in ambiguous[q]:
+            for src, rows in (("active", active), ("archived", archived)):
+                hit = next(((n, f) for n, _p, f in rows if n == name), None)
+                if hit:
+                    cands.append({"name": name, "file": hit[1], "source": src,
+                                  "matched": q})
+                    break
+        if len(cands) >= 2:
+            return cands
     if q in aliases:
         name, f = aliases[q]
         return [{"name": name, "file": f, "source": "active", "matched": q}]
@@ -217,7 +172,8 @@ def resolve(query: str, aliases: dict[str, tuple[str, str]],
 # ---------------------------------------------------------------------------
 # 只吃掉行内空白，不能用 `\s*`：空回答后紧跟空行时 `\s*` 会跨行吞掉下一条
 # 回答行，导致该条被并入上一条、回答总数偏少。
-ANSWER_RE = re.compile(r"^- (A\d+):[ \t]*(.*)$")
+# 前缀 `- ` 可选：25 个问题区块用 `- A123: …`，「自由补充部分」用裸 `A123: …`。
+ANSWER_RE = re.compile(r"^(?:- )?(A\d+):[ \t]*(.*)$")
 
 
 def parse_school(path: Path) -> dict:
@@ -274,66 +230,10 @@ def match_questions(blocks: list[dict], spec: str) -> list[dict]:
     return picked
 
 
-def classify(text: str) -> str:
-    """粗粒度极性：yes / no / mixed / unknown。
-
-    判定顺序（有意保守）：
-      1. 反问 / 语义不明 → unknown，不替用户断言；
-      2. 同时出现否定与肯定信号（「不断电但会跳闸」）→ mixed；
-      3. 出现分校区 / 分化措辞 → mixed；
-      4. 只有否定信号 → no；只有肯定信号 → yes；都没有 → unknown。
-
-    词形处理（2026-10-04 修正）：判定前先剔除 NOT_A_NEGATION（不错/不收费…）
-    与 NEUTRALIZE（无线/发现…）中的中性词，否则「很不错」「无线」「未发现」会被
-    反向归类；计算肯定信号时先剥 NEG_FIRST 整短语、再剥 NEG_TOKENS，避免
-    「不可以骑车」里的「不」被删后残留「可以」而误判为 mixed。
-
-    说明：文本层面的极性判定不可能 100% 准确，因此工具始终把原文一并输出，
-    并提醒用户「计数是回答条数，不是官方事实」。回归样例见 `--selftest`。
-    """
-    t = text.strip()
-    if not t:
-        return "unknown"
-    # 含「不/没」但并不否定问题的说法（不计入、不收费…）先剔除，避免误判
-    for keep in NOT_A_NEGATION:
-        t = t.replace(keep, "")
-    if not t.strip():
-        return "unknown"
-    if any(tok in t for tok in QUERY_TOKENS):
-        return "unknown"
-
-    # 含「不/无/有/发」但语义中性的词先剔除（无线、发现、多久…）
-    scan = t
-    for word in NEUTRALIZE:
-        scan = scan.replace(word, "")
-
-    has_neg = any(phr in scan for phr in NEG_FIRST) or any(
-        tok in scan for tok in NEG_TOKENS if tok != "是"
-    )
-    # 抛掉否定短语与否定词后再看是否有肯定信号，避免「不」字本身被当成肯定
-    t_pos = scan
-    for phr in NEG_FIRST:
-        t_pos = t_pos.replace(phr, "")
-    for tok in NEG_TOKENS:
-        t_pos = t_pos.replace(tok, "")
-    has_pos = any(tok in t_pos for tok in POS_TOKENS)
-    has_hedge = any(h in t for h in HEDGE_TOKENS)
-
-    if has_neg and has_pos:
-        return "mixed"
-    if has_hedge and (has_neg or has_pos):
-        return "mixed"
-    if has_neg:
-        return "no"
-    if has_pos:
-        return "yes"
-    return "unknown"
-
-
-def summarize(answers: list[dict], dates: dict[str, str]) -> dict:
+def summarize(answers: list[dict], dates: dict[str, str], spec: polarity.Spec) -> dict:
     buckets: dict[str, list[dict]] = defaultdict(list)
     for a in answers:
-        pol = classify(a["text"])
+        pol = polarity.classify(a["text"], spec)
         buckets[pol].append({**a, "date": dates.get(a["id"], "")})
     year_hist = Counter((dates.get(a["id"], "")[:4] or "未知") for a in answers)
     return {
@@ -347,14 +247,22 @@ def summarize(answers: list[dict], dates: dict[str, str]) -> dict:
     }
 
 
-def render_question(qa: dict, limit: int, show: tuple[str, ...]) -> str:
+def render_question(qa: dict, limit: int, show: tuple[str, ...],
+                    spec: polarity.Spec) -> str:
     s = qa["summary"]
     out = [f"### {qa['heading']}"]
     parts = " / ".join(f"{k}={v}" for k, v in sorted(s["counts"].items()))
     out.append(f"共 {s['total']} 条回答（{parts or '无'}）")
+    if spec.ex_yes or spec.ex_no or spec.yes or spec.no:
+        out.append(f"判定口径：yes = 「{spec.yes_label}」，no = 「{spec.no_label}」")
     if s["years"]:
         out.append("年份分布：" + "，".join(f"{y} 年 {n} 条" for y, n in s["years"].items()))
-    labels = {"yes": "倾向肯定", "no": "倾向否定", "mixed": "分化 / 分校区差异", "unknown": "其他 / 无法归类"}
+    labels = {
+        "yes": f"倾向肯定（{spec.yes_label}）",
+        "no": f"倾向否定（{spec.no_label}）",
+        "mixed": "分化 / 分校区差异",
+        "unknown": "其他 / 无法归类",
+    }
     for key in show:
         items = s.get(key) or []
         if not items:
@@ -374,15 +282,30 @@ def _no_match_message(school: str, spec: str) -> str:
     return f"在 {school} 中未匹配到问题「{spec}」"
 
 
-def cmd_single(args, aliases, active, archived) -> int:
-    cands = resolve(args.school[0], aliases, active, archived)
+def _is_ambiguous(school: str, cands: list[dict]) -> bool:
+    """候选多于一个且首个不是查询字面本身 → 需要用户澄清。"""
+    return len(cands) > 1 and cands[0]["name"] != school
+
+
+def _print_ambiguous(school: str, cands: list[dict]) -> None:
+    print(f"「{school}」可能指多所学校，请用更完整的名称：", file=sys.stderr)
+    seen: set[str] = set()
+    for c in cands:
+        if c["name"] in seen:
+            continue
+        seen.add(c["name"])
+        print(f"  - {c['name']}（{c['source']}）", file=sys.stderr)
+        if len(seen) >= 10:
+            break
+
+
+def cmd_single(args, aliases, active, archived, ambiguous) -> int:
+    cands = resolve(args.school[0], aliases, active, archived, ambiguous)
     if not cands:
         print(f"未找到学校：{args.school[0]}", file=sys.stderr)
         return 2
-    if len(cands) > 1 and cands[0]["name"] != args.school[0]:
-        print(f"「{args.school[0]}」可能指多所学校，请用更完整的名称：", file=sys.stderr)
-        for c in cands[:10]:
-            print(f"  - {c['name']}（{c['source']}）", file=sys.stderr)
+    if _is_ambiguous(args.school[0], cands):
+        _print_ambiguous(args.school[0], cands)
         return 2
 
     c = cands[0]
@@ -403,7 +326,9 @@ def cmd_single(args, aliases, active, archived) -> int:
         "source": c["source"],
         "alias_used": c.get("matched"),
         "questions": [
-            {"heading": b["heading"], "summary": summarize(b["answers"], data["dates"])}
+            {"heading": b["heading"],
+             "summary": summarize(b["answers"], data["dates"],
+                                    polarity.spec_for_heading(b["heading"]))}
             for b in blocks
         ],
     }
@@ -418,19 +343,26 @@ def cmd_single(args, aliases, active, archived) -> int:
     print(f"数据文件：{result['file']}")
     print()
     for b in blocks:
-        qa = {"heading": b["heading"], "summary": summarize(b["answers"], data["dates"])}
-        print(render_question(qa, args.limit, tuple(args.show)))
+        qa = {"heading": b["heading"],
+              "summary": summarize(b["answers"], data["dates"],
+                                     polarity.spec_for_heading(b["heading"]))}
+        print(render_question(qa, args.limit, tuple(args.show),
+                              polarity.spec_for_heading(b["heading"])))
         print()
     return 0
 
 
-def cmd_compare(args, aliases, active, archived) -> int:
+def cmd_compare(args, aliases, active, archived, ambiguous) -> int:
     payload = []
     errors = 0
     for school in args.compare:
-        cands = resolve(school, aliases, active, archived)
+        cands = resolve(school, aliases, active, archived, ambiguous)
         if not cands:
             print(f"未找到学校：{school}", file=sys.stderr)
+            errors += 1
+            continue
+        if _is_ambiguous(school, cands):
+            _print_ambiguous(school, cands)
             errors += 1
             continue
         c = cands[0]
@@ -451,7 +383,9 @@ def cmd_compare(args, aliases, active, archived) -> int:
             "source": c["source"],
             "file": str(path.relative_to(ROOT)),
             "questions": [
-                {"heading": b["heading"], "summary": summarize(b["answers"], data["dates"])}
+                {"heading": b["heading"],
+                 "summary": summarize(b["answers"], data["dates"],
+                                        polarity.spec_for_heading(b["heading"]))}
                 for b in blocks
             ],
         })
@@ -461,10 +395,46 @@ def cmd_compare(args, aliases, active, archived) -> int:
     for item in payload:
         print(f"# {item['school']}" + ("（归档数据）" if item["source"] == "archived" else ""))
         for q in item["questions"]:
-            print(render_question(q, args.limit, tuple(args.show)))
+            print(render_question(q, args.limit, tuple(args.show),
+                                  polarity.spec_for_heading(q["heading"])))
             print()
         print("-" * 60)
     return 2 if errors else 0
+
+
+def _aggregate_hits(hits: list[dict]) -> list[dict]:
+    """把同一学校在多个目标问题上的命中合并为一行。
+
+    关键词可能同时命中多个问题（如「宿舍」→ 7 个问题），若不合并，同一学校会
+    重复出现多次，且「命中 N 所学校」会按行数虚高（实测 15176 行对应 3424 所）。
+    合并后 yes/no/mixed/total 为各目标问题上的计数之和，`dims` 为命中问题数。
+    """
+    agg: dict[tuple[str, str], dict] = {}
+    for h in hits:
+        key = (h["source"], h["school"])
+        row = agg.get(key)
+        if row is None:
+            row = {"school": h["school"], "province": h["province"],
+                   "source": h["source"], "file": h["file"],
+                   "yes": 0, "no": 0, "mixed": 0, "total": 0, "questions": []}
+            agg[key] = row
+        row["yes"] += h["yes"]
+        row["no"] += h["no"]
+        row["mixed"] += h["mixed"]
+        row["total"] += h["total"]
+        row["questions"].append(h["heading"])
+    out = list(agg.values())
+    for row in out:
+        row["dims"] = len(row["questions"])
+    return out
+
+
+def _polarity_want(pol: str, specs: list[polarity.Spec]) -> str:
+    """输出「倾向某极性」的人话说明；mixed 不再复用 no_label。"""
+    if pol == "mixed":
+        return "分化 / 分校区差异"
+    labels = ((s.yes_label if pol == "yes" else s.no_label) for s in specs)
+    return "、".join(dict.fromkeys(labels))
 
 
 def cmd_reverse(args, aliases, active, archived) -> int:
@@ -492,6 +462,8 @@ def cmd_reverse(args, aliases, active, archived) -> int:
             return 2
         target_headings = {b["heading"] for b in probe_blocks}
     targets = {_norm_heading(h) for h in target_headings}
+    target_specs = list({s.qid: s for s in
+                         (polarity.spec_for_heading(h) for h in sorted(target_headings))}.values())
 
     hits = []
     for rows, base, src in ((active, ACTIVE_DIR, "active"), (archived, ARCHIVE_DIR, "archived")):
@@ -506,7 +478,8 @@ def cmd_reverse(args, aliases, active, archived) -> int:
             for b in data["blocks"]:
                 if _norm_heading(b["heading"]) not in targets:
                     continue
-                s = summarize(b["answers"], data["dates"])
+                s = summarize(b["answers"], data["dates"],
+                              polarity.spec_for_heading(b["heading"]))
                 n_yes = s["counts"].get("yes", 0)
                 n_no = s["counts"].get("no", 0)
                 n_mixed = s["counts"].get("mixed", 0)
@@ -523,6 +496,8 @@ def cmd_reverse(args, aliases, active, archived) -> int:
                         "heading": b["heading"],
                         "yes": n_yes, "no": n_no, "mixed": n_mixed, "total": s["total"],
                     })
+    hits = _aggregate_hits(hits)
+
     def rank(h: dict) -> tuple:
         if args.polarity == "mixed":
             return (-h["mixed"], h["school"])
@@ -537,14 +512,16 @@ def cmd_reverse(args, aliases, active, archived) -> int:
                          ensure_ascii=False, indent=2))
         return 0
 
-    print(f"# 反向筛选：{args.reverse} → 倾向「{args.polarity}」")
+    want = _polarity_want(args.polarity, target_specs)
+    print(f"# 反向筛选：{args.reverse} → 倾向「{args.polarity}：{want}」")
     print(f"命中 {len(hits)} 所学校（按证据强度排序，最多显示 {args.limit} 所）")
     print()
-    print("| 学校 | 省份 | 肯定 | 否定 | 分化 | 总回答 | 来源 |")
-    print("|---|---|---|---|---|---|---|")
+    print("| 学校 | 省份 | 肯定 | 否定 | 分化 | 总回答 | 命中维度 | 来源 |")
+    print("|---|---|---|---|---|---|---|---|")
     for h in hits[: args.limit]:
         src = "归档" if h["source"] == "archived" else "活跃"
-        print(f"| {h['school']} | {h['province']} | {h['yes']} | {h['no']} | {h['mixed']} | {h['total']} | {src} |")
+        print(f"| {h['school']} | {h['province']} | {h['yes']} | {h['no']} | "
+              f"{h['mixed']} | {h['total']} | {h['dims']} | {src} |")
     if len(hits) > args.limit:
         print(f"\n（其余 {len(hits) - args.limit} 所略，可用 --limit 调整）")
     print("\n> 肯定/否定为按回答逐条分类的计数；「分化」表示同校存在分校区或年份差异，")
@@ -552,35 +529,21 @@ def cmd_reverse(args, aliases, active, archived) -> int:
     return 0
 
 
-SELFTEST_CASES: list[tuple[str, str]] = [
-    # (回答文本, 期望极性)：回归 2026-10-04 修正的词内误判
-    ("很不错，基本全覆盖（要办校园卡）", "unknown"),
-    ("有时很差", "mixed"),
-    ("勉强能用，晚上经常断", "mixed"),
-    ("宿舍无线接入约500Mbps", "unknown"),
-    ("宿舍附近未发现充电地点", "no"),
-    ("不可以骑车", "no"),
-    ("不断电", "no"),
-    ("没有空调", "no"),
-    ("有空调", "yes"),
-    ("能带电脑", "yes"),
-    ("不能带电脑", "no"),
-    ("不断电但会跳闸", "mixed"),
-    ("部分宿舍有空调", "mixed"),
-    ("", "unknown"),
-]
-
-
 def run_selftest() -> int:
-    """跑极性判定回归样例；不读取数据文件，可离线执行。"""
+    """跑极性判定回归样例；不读取数据文件，可离线执行。
+
+    样例定义在 `polarity.SELFTEST_CASES`（每条带所属问题编号），完整回归在
+    `tests/test_polarity.py`。
+    """
+    cases = polarity.SELFTEST_CASES
     bad = 0
-    for text, want in SELFTEST_CASES:
-        got = classify(text)
+    for qid, text, want in cases:
+        got = polarity.classify(text, polarity.spec_for_qid(qid))
         if got != want:
             bad += 1
         flag = "ok  " if got == want else "FAIL"
-        print(f"  [{flag}] {text!r:44} want={want:7} got={got}")
-    print(f"== query.py 极性回归：{len(SELFTEST_CASES) - bad}/{len(SELFTEST_CASES)} 通过 ==")
+        print(f"  [{flag}] Q{qid:02d} {text!r:44} want={want:7} got={got}")
+    print(f"== polarity 回归：{len(cases) - bad}/{len(cases)} 通过 ==")
     return 1 if bad else 0
 
 
@@ -606,17 +569,18 @@ def main() -> int:
         return run_selftest()
 
     aliases = load_aliases()
+    ambiguous = load_ambiguous()
     active = load_index(INDEX)
     archived = load_index(ARCHIVE_INDEX)
 
     if args.reverse:
         return cmd_reverse(args, aliases, active, archived)
     if args.compare:
-        return cmd_compare(args, aliases, active, archived)
+        return cmd_compare(args, aliases, active, archived, ambiguous)
     if not args.school:
         ap.print_help()
         return 2
-    return cmd_single(args, aliases, active, archived)
+    return cmd_single(args, aliases, active, archived, ambiguous)
 
 
 if __name__ == "__main__":

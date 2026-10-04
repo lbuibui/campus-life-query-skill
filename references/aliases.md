@@ -2,12 +2,15 @@
 
 数据来源：[CollegesChat/university-information](https://github.com/CollegesChat/university-information) (CC BY-NC-SA 4.0)
 
-本表收录 **2348 所学校** 的 **2829 个**可唯一检索的别名 / 简称 / 曾用名。
+本表收录 **2348 所学校** 的 **2827 个**可唯一检索的别名 / 简称 / 曾用名。
 由 `tools/build_aliases.py` 生成（人工种子表 + 自动派生），请勿手工编辑。
+
+## 唯一别名
 
 > **用法**：用户使用简称（如「北邮」「华科」「人大」）时，先 grep 本表，
 > 拿到学校名与文件名后，再到 `references/universities/` 读取数据。
 > 本表无命中时，回退到 `references/index.md` 用全称或关键词搜索。
+> 指向多所学校的简称在下面的「歧义简称」表，请先向用户确认。
 
 > **歧义保护**：本表只收录唯一指向一所学校的别名。
 > 任何别名的文字都不会等于另一所学校的全称（否则会劫持全称查询）。
@@ -57,7 +60,6 @@
 | 北语 | 北京语言大学 | 北京 | bei-jing-yu-yan-da-xue.md |
 | 北邮 | 北京邮电大学 | 北京 | bei-jing-you-dian-da-xue.md |
 | 华侨 | 华侨大学 | 福建 | hua-qiao-da-xue.md |
-| 华农 | 华南农业大学 | 广东 | hua-nan-nong-ye-da-xue.md |
 | 华工 | 华南理工大学 | 广东 | hua-nan-li-gong-da-xue.md |
 | 华政 | 华东政法大学 | 上海 | hua-dong-zheng-fa-da-xue.md |
 | 华水 | 华北水利水电大学 | 河南 | hua-bei-shui-li-shui-dian-da-xue.md |
@@ -76,7 +78,6 @@
 | 吉大 | 吉林大学 | 吉林 | ji-lin-da-xue.md |
 | 同济 | 同济大学 | 上海 | tong-ji-da-xue.md |
 | 国美 | 中国美术学院 | 浙江 | zhong-guo-mei-zhu-xue-yuan.md |
-| 地大 | 中国地质大学北京 | 北京 | zhong-guo-di-zhi-da-xue-bei-jing.md |
 | 复旦 | 复旦大学 | 上海 | fu-dan-da-xue.md |
 | 大工 | 大连理工大学 | 辽宁 | da-lian-li-gong-da-xue.md |
 | 天医 | 天津医科大学 | 天津 | tian-jin-yi-ke-da-xue.md |
@@ -2843,3 +2844,15 @@
 | 海南陵水黎安国际教育创新试验区北京邮电大学玛丽女王海南 | 海南陵水黎安国际教育创新试验区北京邮电大学玛丽女王海南学院 | 北京 | hai-nan-ling-shui-li-an-guo-ji-jiao-yu-chuang-xin-shi-yan-qu-bei-jing-you-dian-da-xue-ma-li-nu-wang-hai-nan-xue-yuan.md |
 | 河北农业大学渤海校区2025届起改为河北农业大学现代科技 | 河北农业大学渤海校区2025届起改为河北农业大学现代科技学院 | 河北 | he-bei-nong-ye-da-xue-bo-hai-xiao-qu-2025jie-qi-gai-wei-he-bei-nong-ye-da-xue-xian-dai-ke-ji-xue-yuan.md |
 | Ollscoil Chathair Bhaile Átha CliathDublin City University都柏林城市 | Ollscoil Chathair Bhaile Átha CliathDublin City University都柏林城市大学 | 其他 | ollscoil-chathair-bhaile-atha-cliathdublin-city-universitydu-bo-lin-cheng-shi-da-xue.md |
+
+## 歧义简称（指向多所学校，需先向用户确认）
+
+> `tools/query.py` 命中这些简称时会直接列出候选并退出，不猜学校。
+
+| 简称 | 候选学校 |
+|---|---|
+| 中国地质大学 | 中国地质大学北京；中国地质大学武汉 |
+| 中国石油大学 | 中国石油大学北京；中国石油大学华东 |
+| 华农 | 华中农业大学；华南农业大学 |
+| 华师 | 华中师范大学；华东师范大学；华南师范大学 |
+| 地大 | 中国地质大学北京；中国地质大学武汉 |

@@ -7,7 +7,7 @@
 
 数据来源：[CollegesChat/university-information](https://github.com/CollegesChat/university-information)
 
-> 最后更新：2026-09-19（数据）；2026-10-04（工具与隐私加固）
+> 最后更新：2026-09-19（数据）；2026-10-04（判定器重写、单元测试与 CI、工具与隐私加固）
 >
 > 数据仅供参考、娱乐和信息辅助，不代表任何学校或官方机构立场。
 
@@ -33,11 +33,11 @@
 
 ### 2. 简称 / 别名检索
 
-`references/aliases.md` 收录 **2829 条**可唯一检索的别名、简称与曾用名，覆盖 **2348 所学校**（如「北邮」「华科」「人大」「央财」），解决用户用口语简称提问时按全称索引搜不到的问题。生成器保证任何别名的文字都不会等于另一所**真实学校**的全称，因此简称不会劫持全称查询；少数别名会指向一个上游以简称命名的占位条目（如「川农」→ 四川农业大学），这是有意为之。
+`references/aliases.md` 收录 **2827 条**可唯一检索的别名、简称与曾用名，覆盖 **2348 所学校**（如「北邮」「华科」「人大」「央财」），解决用户用口语简称提问时按全称索引搜不到的问题。生成器保证任何别名的文字都不会等于另一所**真实学校**的全称，因此简称不会劫持全称查询；少数别名会指向一个上游以简称命名的占位条目（如「川农」→ 四川农业大学），这是有意为之。真正指向多所学校的简称（地大、华师、华农、中国地质大学、中国石油大学）不猜，单独列入文件末尾的「歧义简称」表，`query.py` 命中时会列出候选并退出。
 
 ### 3. 结构化查询与反向筛选
 
-`tools/query.py` 按问题区块解析回答并做极性分类，支持单校查询、跨校对比和「哪些学校不断电」这类反向筛选，同时标出「分化 / 分校区差异」，避免用字面 grep 把「有人提到断电」误当成「这所学校断电」。
+`tools/query.py` 按问题区块解析回答并做极性分类，支持单校查询、跨校对比和「哪些学校不断电」这类反向筛选，同时标出「分化 / 分校区差异」，避免用字面 grep 把「有人提到断电」误当成「这所学校断电」。关键词命中多个问题时（如「宿舍」→ 7 个问题），反向筛选结果按学校归并、以「命中维度」列标出该校命中了几个问题，报的是唯一学校数而不是命中行数。
 
 ```bash
 python3 tools/query.py 北邮 --q 断电
@@ -56,15 +56,20 @@ campus-life-query-skill/
 ├── LICENSE                     # CC BY-NC-SA 4.0 协议全文
 ├── NOTICE.md                   # 数据来源、署名与改动说明
 ├── tools/                      # 可选脚本：查询、校验、维护
-│   ├── query.py                # 结构化查询 / 反向筛选（--selftest 回归极性判定）
+│   ├── query.py                # 结构化查询 / 反向筛选（CLI 入口）
+│   ├── polarity.py             # 按 25 个问题区分的极性判定器（纯标准库）
 │   ├── build_aliases.py        # 生成别名索引（--check 校验是否与现存表一致）
 │   ├── redact.py               # 来源列表 + 答案正文个人信息脱敏（幂等）
 │   ├── consolidate.py          # 归并上游错放条目（幂等）
 │   ├── patch_index.py          # 施加索引本地修正（幂等）
-│   └── verify.py               # 数据完整性回归校验（--quiet / --sample）
+│   ├── verify.py               # 数据完整性回归校验（--quiet / --sample）
+│   └── check_all.sh            # 一键跑完下列全部检查（与 CI 同步）
+├── tests/                      # 单元测试（unittest，兼容 pytest）
+│   ├── test_polarity.py        # 判定器逐题回归 + 边界样例
+│   └── test_query.py           # 解析 / 索引 / 别名 / CLI 冒烟
 └── references/
     ├── index.md                # 活跃学校索引（3448 所）
-    ├── aliases.md              # 别名 / 简称索引（2829 条）
+    ├── aliases.md              # 别名 / 简称索引（2827 条 + 歧义简称）
     ├── sync-log.md             # 上游同步台账
     ├── universities/           # 每所学校一个 Markdown 数据文件
     └── archived/
@@ -114,21 +119,49 @@ Agent 会自己克隆 skill 到对应目录，不用操心路径。
 
 ---
 
-## 数据校验
+## 数据校验与测试
 
-同步上游数据后运行：
+本地一键跑完所有检查（与 CI 同步）：
 
 ```bash
-python3 tools/consolidate.py   # 归并上游错放条目（幂等，异常时退出码 1）
-python3 tools/redact.py        # 来源列表 + 正文个人信息脱敏（幂等）
-python3 tools/build_aliases.py # 重建别名索引
-python3 tools/patch_index.py   # 施加索引本地修正（幂等）
-python3 tools/verify.py        # 完整性校验，期望 0 失败
-python3 tools/verify.py --quiet # 只输出警告、失败项与汇总
-python3 tools/query.py --selftest # 极性判定回归样例（离线）
+./tools/check_all.sh
 ```
 
-只读校验模式：`consolidate.py --check`、`redact.py --check`（另有 `--dry-run` 打印待替换内容）、`build_aliases.py --check`（比对现存 `aliases.md` 是否与生成结果一致，不一致即退出码 1）、`patch_index.py --check`；`verify.py` 本身就是只读校验，可用 `--quiet` 精简输出、`--sample N` 抽样跑结构检查。可在同步前后各跑一次确认状态收敛。
+单独运行：
+
+```bash
+python3 -m unittest discover -s tests   # 单元测试（判定器 + 解析）
+python3 tools/query.py --selftest        # 极性判定回归样例（离线）
+python3 tools/consolidate.py             # 归并上游错放条目（幂等，异常时退出码 1）
+python3 tools/redact.py                  # 来源列表 + 正文个人信息脱敏（幂等）
+python3 tools/build_aliases.py           # 重建别名索引
+python3 tools/patch_index.py             # 施加索引本地修正（幂等）
+python3 tools/verify.py                  # 完整性校验，期望 0 失败
+python3 tools/verify.py --quiet          # 只输出警告、失败项与汇总
+```
+
+CI（`.github/workflows/ci.yml`）在 Python 3.10-3.13 上跑单元测试，并用 pytest
+再收集一次；另有一个 `data-integrity` 作业确认脱敏/归并/索引修正幂等、`verify.py`
+0 失败。只读校验模式：`consolidate.py --check`、`redact.py --check`（另有
+`--dry-run` 打印待替换内容）、`build_aliases.py --check`（比对现存 `aliases.md`
+是否与生成结果一致，不一致即退出码 1）、`patch_index.py --check`；`verify.py`
+本身就是只读校验，可用 `--quiet` 精简输出、`--sample N` 抽样跑结构检查。
+
+### 极性判定器（tools/polarity.py）
+
+反向筛选与单校统计都依赖把每条回答判定为 `yes / no / mixed / unknown`。判定器
+按 25 个问题各自维护语义规格（专属名词 + 通用说法 + 分化措辞），而不是套用一套
+与问题无关的词表，因此：
+
+- 「不断电」在断电问题里判否，且不会被当成「断电」的肯定；
+- 「不是上床下桌」「是上下铺」判否，「上床下桌但不是一人一桌」判分化；
+- 「不贵」在食堂问题里判肯定；
+- 分校区 / 年份差异（「部分」「有的校区」）与转折措辞一律归入 `mixed`，
+  无法断言时给 `unknown` 而不是硬猜。
+
+判定口径会随每次查询结果一起打印（例如 `yes = 「有独立卫浴」`），计数只是回答
+条数统计，不是官方事实。逐题回归样例见 `tests/test_polarity.py` 与
+`python3 tools/query.py --selftest`。
 
 `verify.py` 检查索引与文件双向一致、索引正文声明的院校/「其他」总数、别名不劫持真实校名、25 个问题区块且每区块至少 1 条回答、回答编号无悬空引用、来源列表已脱敏、H1 与索引一致。上游固有特征以**警告**列出、不计入失败——当前为 **0 失败 / 8 项警告**：空回答正文 2 处、以简称命名的占位条目 34 个、索引名为说明文字或超长 50 个、文件名超 150 字符 3 个。这些都是上游原始数据的性质，本项目如实保留、不做批量改写。
 

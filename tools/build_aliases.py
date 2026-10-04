@@ -21,7 +21,9 @@
 只存在于归档库的学校（如「中国音乐学院」）请直接查 references/archived/index.md。
 
 安全原则：任何别名只要会指向多所学校就不当作唯一别名，绝不猜。宁可少收录，
-也不让 Agent 把 A 校的数据当成 B 校的回答输出。
+也不让 Agent 把 A 校的数据当成 B 校的回答输出。明知有歧义的常见简称（地大、
+华师、华农、中国地质大学、中国石油大学）额外写入「歧义简称」小表，供
+`tools/query.py` 在命中时提示候选、要求用户确认。
 
 用法：
     python3 tools/build_aliases.py            # 重建 references/aliases.md
@@ -76,7 +78,7 @@ SEED: dict[str, list[str]] = {
     "中国美术学院": ["国美", "CAA"],
     "中国农业大学": ["中国农大", "CAU"],
     "中国矿业大学": ["矿大", "CUMT"],
-    "中国地质大学北京": ["地大", "CUG"],
+    "中国地质大学北京": ["CUG"],
     "中国地质大学武汉": ["地大武汉"],
     # 注意：索引中只有「中国石油大学北京 / 北京克拉玛依 / 华东」等校区名，
     # 没有全等条目；石大/中石大/UPC 在三者间有歧义，按「绝不猜」原则不收录。
@@ -187,7 +189,7 @@ SEED: dict[str, list[str]] = {
     "中山大学": ["中大", "SYSU"],
     "华南理工大学": ["华工", "华南理工", "SCUT"],
     "华南师范大学": ["华南师大", "SCNU"],
-    "华南农业大学": ["华农", "SCAU"],
+    "华南农业大学": ["SCAU"],
     "暨南大学": ["暨大"],
     "广东工业大学": ["广工", "GDUT"],
     "深圳大学": ["深大", "SZU"],
@@ -362,6 +364,17 @@ REMOVABLE_SUFFIXES = [
 # 含这些词的校名视为「真实学校全称」；派生的别名若与之全等，说明会劫持另一所学校。
 FULL_NAME_MARKERS = ("大学", "学院", "学校", "中学", "小学", "公学", "校区", "分校")
 
+# 民间可同时指多所学校的简称：不收入唯一别名表（“绝不猜”原则），
+# 改为在 aliases.md 末尾单独列出，由 query.py 解析时提示候选、要求用户确认。
+# 键与候选校名都必须是索引中的真实校名；候选少于两所时整条丢弃并告警。
+AMBIGUOUS: dict[str, list[str]] = {
+    "地大": ["中国地质大学北京", "中国地质大学武汉"],
+    "华师": ["华中师范大学", "华东师范大学", "华南师范大学"],
+    "华农": ["华中农业大学", "华南农业大学"],
+    "中国地质大学": ["中国地质大学北京", "中国地质大学武汉"],
+    "中国石油大学": ["中国石油大学北京", "中国石油大学华东"],
+}
+
 # 太泛化、单独出现时几乎必然误伤的通用词，不作为别名
 STOPWORDS = {
     "大学", "学院", "学校", "中国", "北京", "上海", "天津", "重庆", "广州",
@@ -438,6 +451,19 @@ def main() -> int:
     # 规则 3（「唯一子串包含」）已删除：它的别名全部取自索引校名本身，
     # 必然把某所学校指向另一所学校，是 329 条劫持的唯一来源，且无一条有效产出。
 
+    # --- 规则 3（「唯一子串包含」）已删除 -----------------------------------
+
+    # --- 歧义简称：不进唯一别名表，单独成表 --------------------------------
+    ambiguous: dict[str, list[str]] = {}
+    ambiguous_missing: list[str] = []
+    for nick, cands in AMBIGUOUS.items():
+        valid = [c for c in cands if c in nameset]
+        if len(valid) < 2:
+            ambiguous_missing.append(nick)
+            continue
+        ambiguous[nick] = valid
+        alias_map.pop(nick, None)  # 同一简称不得既是唯一别名又是歧义简称
+
     # --- 汇总 --------------------------------------------------------------
     unique = {a: next(iter(s)) for a, s in alias_map.items() if len(s) == 1}
     unique = {a: s for a, s in unique.items() if a != s}  # 无需重复收录全称
@@ -461,9 +487,12 @@ def main() -> int:
         f"本表收录 **{len(by_school)} 所学校** 的 **{len(unique)} 个**可唯一检索的别名 / 简称 / 曾用名。",
         "由 `tools/build_aliases.py` 生成（人工种子表 + 自动派生），请勿手工编辑。",
         "",
+        "## 唯一别名",
+        "",
         "> **用法**：用户使用简称（如「北邮」「华科」「人大」）时，先 grep 本表，",
         "> 拿到学校名与文件名后，再到 `references/universities/` 读取数据。",
         "> 本表无命中时，回退到 `references/index.md` 用全称或关键词搜索。",
+        "> 指向多所学校的简称在下面的「歧义简称」表，请先向用户确认。",
         "",
         "> **歧义保护**：本表只收录唯一指向一所学校的别名。",
         "> 任何别名的文字都不会等于另一所学校的全称（否则会劫持全称查询）。",
@@ -478,24 +507,40 @@ def main() -> int:
         )
     lines.append("")
 
+    lines.append("## 歧义简称（指向多所学校，需先向用户确认）")
+    lines.append("")
+    lines.append("> `tools/query.py` 命中这些简称时会直接列出候选并退出，不猜学校。")
+    lines.append("")
+    lines.append("| 简称 | 候选学校 |")
+    lines.append("|---|---|")
+    for nick in sorted(ambiguous):
+        lines.append(f"| {nick} | {'；'.join(ambiguous[nick])} |")
+    lines.append("")
+
     text = "\n".join(lines).rstrip() + "\n"
 
     if args.check:
         current = OUT.read_text(encoding="utf-8") if OUT.exists() else ""
         drift = current != text
         print(f"[check] 唯一别名 {len(unique)} 个，覆盖 {len(by_school)} 所学校")
+        print(f"[check] 歧义简称 {len(ambiguous)} 个")
         if seed_missing:
             print(f"[check] 种子未命中 {len(seed_missing)}：{seed_missing}")
+        if ambiguous_missing:
+            print(f"[check] 歧义候选不足两所，已丢弃 {len(ambiguous_missing)}：{ambiguous_missing}")
         if drift:
             print(f"[check] {OUT.relative_to(ROOT)} 与生成结果不一致，需要重建")
         else:
             print(f"[check] {OUT.relative_to(ROOT)} 与生成结果一致")
-        return 1 if (drift or seed_missing) else 0
+        return 1 if (drift or seed_missing or ambiguous_missing) else 0
 
     OUT.write_text(text, encoding="utf-8")
-    print(f"写入 {OUT.relative_to(ROOT)}：{len(unique)} 个别名 / {len(by_school)} 所学校")
+    print(f"写入 {OUT.relative_to(ROOT)}：{len(unique)} 个别名 / {len(by_school)} 所学校 / "
+          f"{len(ambiguous)} 个歧义简称")
     if seed_missing:
         print(f"警告：种子表未命中 {len(seed_missing)} 项 -> {seed_missing}（请改成索引中的真实校名）")
+    if ambiguous_missing:
+        print(f"警告：歧义简称候选不足两所，已丢弃 -> {ambiguous_missing}")
     return 0
 
 

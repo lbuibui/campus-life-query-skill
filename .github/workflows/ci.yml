@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-tests:
+    name: unit tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Polarity + query unit tests (stdlib unittest)
+        run: python -m unittest discover -s tests -v
+      - name: Polarity regression samples
+        run: python tools/query.py --selftest
+
+  pytest:
+    name: pytest collection
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pytest
+        run: python -m pip install --upgrade pytest
+      - name: Run tests under pytest
+        run: python -m pytest tests -q
+
+  data-integrity:
+    name: data integrity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Maintenance scripts converge (idempotency)
+        run: |
+          python tools/consolidate.py --check
+          python tools/redact.py --check
+          python tools/build_aliases.py --check
+          python tools/patch_index.py --check
+      - name: Dataset integrity regression
+        run: python tools/verify.py --quiet
