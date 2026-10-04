@@ -3,15 +3,16 @@
 
 背景：上游生成管线直接用问卷里的「学校名」字段做文件名与 H1 标题。个别填写
 者在该字段写了说明文字（例如「原校名：广东轻工职业技术学院\n学校升本了，
-校名改为广东轻工职业技术大学」），于是上游多出一个 69 字符乱码文件名、标题
-是说明文字的孤立条目。该条目只有 1 位问卷者，但 25 问全覆盖、自由补充详尽，
-质量很高，却不会被任何按学校名检索的路径找到。
+校名改为广东轻工职业技术大学」），于是上游多出一个 141 字符的拼音文件名、
+标题是说明文字的孤立条目。该条目只有 1 位问卷者，但 25 问全覆盖、自由补充
+详尽，质量很高，却不会被任何按学校名检索的路径找到。
 
 归并策略：**原地插入**，不做整文件重建。历史教训：上游个别回答是多段落，
 且「自由补充部分」的条目不带 `- ` 前缀；任何 parse→rebuild 的写法都会悄悄
 吃掉这些行。这里只在三处插入文本，其余字节保持原样：
   1. <details> 来源列表中按提交时间插入一行；
-  2. 各问题区块最后一条回答之后插入该问卷者的回答；
+  2. 各问题区块最后一条回答之后插入该问卷者的回答（**原样保留**来源文件中
+     `- ` 或「无前缀」的写法，不统一改写）；
   3. 从索引移除错放文件的行，并删除错放文件。
 
 用法：
@@ -94,23 +95,31 @@ def id_positions(aid: str) -> list[str]:
     return hits
 
 
+def _source_sort_key(date: str, aid: str) -> tuple[str, str]:
+    mm = re.match(r"(\d{4})\s*年\s*(\d{1,2})\s*月", date)
+    return (f"{mm.group(1)}{int(mm.group(2)):02d}" if mm else "000000"), aid
+
+
 def insert_source_line(text: str, entry: tuple[str, str, str]) -> str:
-    """按提交时间把来源行插入 <ul> 内。"""
+    """按提交时间把来源行插入 <ul> 内。
+
+    只在既有行之间**插入一行**，不重建整个列表：任何不匹配 SOURCE_RE 的
+    既有 `<li>`（缺日期、带尾空格等）都会被完整保留。
+    """
     aid, ident, date = entry
     m = re.search(r"<ul>\n(.*?)\n</ul>", text, re.S)
     if not m:
         raise SystemExit("找不到 <ul> 来源列表")
-    existing = SOURCE_RE.findall(m.group(1))
-    rows = [(a, i, d) for a, i, d in existing] + [entry]
-
-    def key(row: tuple[str, str, str]) -> tuple[str, str]:
-        _a, _i, d = row
-        mm = re.match(r"(\d{4})\s*年\s*(\d{1,2})\s*月", d)
-        return (f"{mm.group(1)}{int(mm.group(2)):02d}" if mm else "000000"), _a
-
-    rows.sort(key=key)
-    new_list = "\n".join(f"<li>{a}: {i} ({d})</li>" for a, i, d in rows)
-    return text[: m.start(1)] + new_list + text[m.end(1):]
+    lines = m.group(1).split("\n")
+    new_key = _source_sort_key(date, aid)
+    insert_at = len(lines)
+    for i, line in enumerate(lines):
+        mm = SOURCE_RE.match(line)
+        if mm and _source_sort_key(mm.group(3), mm.group(1)) > new_key:
+            insert_at = i
+            break
+    lines.insert(insert_at, f"<li>{aid}: {ident} ({date})</li>")
+    return text[: m.start(1)] + "\n".join(lines) + text[m.end(1):]
 
 
 def insert_answers(text: str, answers: dict[str, list[str]]) -> tuple[str, list[str]]:
@@ -139,10 +148,10 @@ def insert_answers(text: str, answers: dict[str, list[str]]) -> tuple[str, list[
         line_end = segment.find("\n", last_match.end())
         line_end = len(segment) if line_end == -1 else line_end + 1
         at = hm.end() + line_end
-        inserted = "".join(
-            (answer if answer.startswith("- ") else "- " + answer) + "\n"
-            for answer in items
-        )
+        # 逐条原样插入：answer 已带来源文件中该行的原始前缀（问题区块为
+        # `- `，「自由补充部分」不带前缀），改写前缀会改变条目语义与
+        # `- A####` 计数口径，也可能让「自由补充」条目被当成回答解析。
+        inserted = "".join(answer + "\n" for answer in items)
         # 区块以 EOF 结束且原文末尾无换行时，补一个换行，避免拼接成同一行
         if at >= len(text) and not text.endswith("\n"):
             inserted = "\n" + inserted
@@ -156,6 +165,7 @@ def main() -> int:
     args = ap.parse_args()
 
     done = 0
+    failed = 0
     for bad_name, school in MERGE_MAP.items():
         bad_path = ACTIVE / bad_name
         if not bad_path.exists():
@@ -170,12 +180,14 @@ def main() -> int:
         print(f"  来源 id：{aids}")
         if len(aids) != 1:
             print("  [中止] 预期恰好 1 个来源 id，需人工确认")
+            failed += 1
             continue
 
         aid = aids[0]
         positions = id_positions(aid)
         if positions and positions != [bad_path.name]:
             print(f"  [中止] {aid} 同时出现在 {positions}，存在重复计数风险")
+            failed += 1
             continue
 
         tgt_text = target.read_text(encoding="utf-8")
@@ -186,10 +198,17 @@ def main() -> int:
         entry = parse_source_entry(bad_path, aid)
         if entry is None:
             print("  [中止] 错放文件中找不到该 id 的来源行")
+            failed += 1
             continue
         answers = parse_answers(bad_path)
         total = sum(len(v) for v in answers.values())
         print(f"  将插入：来源行 1 条、回答 {total} 条、覆盖区块 {len(answers)} 个")
+
+        # 破坏性操作前的安全闸：解析不出任何回答就绝不删文件 / 改索引
+        if total == 0:
+            print("  [中止] 错放文件里解析不出任何回答，拒绝归并以免数据丢失")
+            failed += 1
+            continue
 
         if args.check:
             print("  [check] 可以安全归并（未改动）")
@@ -199,6 +218,7 @@ def main() -> int:
         new_text, missing = insert_answers(new_text, answers)
         if missing:
             print(f"  [中止] 目标文件缺少区块：{missing}")
+            failed += 1
             continue
         target.write_text(new_text, encoding="utf-8")
 
@@ -211,8 +231,8 @@ def main() -> int:
         print(f"  [完成] {aid} 已归并进「{school}」，错放文件已删除，索引行已移除")
         done += 1
 
-    print(f"\n共归并 {done} 个错放条目")
-    return 0
+    print(f"\n共归并 {done} 个错放条目；{failed} 个需人工处理")
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":

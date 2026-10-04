@@ -20,6 +20,9 @@
     # 反向筛选：哪些学校不断电
     python3 tools/query.py --reverse 断电 --polarity no --limit 20
     python3 tools/query.py --reverse 独立卫浴 --polarity yes --min-yes 3
+
+    # 极性判定回归样例（离线，不读数据）
+    python3 tools/query.py --selftest
 """
 
 from __future__ import annotations
@@ -70,7 +73,46 @@ QUESTIONS: list[tuple[int, str, tuple[str, ...]]] = [
     (25, "宿舍晚上查寝吗，封寝吗，晚归能回去吗", ("查寝", "封寝", "晚归")),
 ]
 
-# 极性词典。NEG_FIRST 内部的短语本身含否定词，必须先于 GATED_NEG 判断。
+# 25 个问题在数据文件中的规范标题（`## Q: …？`）。编号 --q N 按此表精确匹配，
+# 不走关键词模糊匹配。注意：必须与 tools/verify.py 的 CANONICAL_HEADINGS 保持一致。
+CANONICAL_HEADINGS = [
+    "宿舍是上床下桌吗？",
+    "教室和宿舍有没有空调？",
+    "有独立卫浴吗？没有独立浴室的话，澡堂离宿舍多远？",
+    "有早自习、晚自习吗？",
+    "有晨跑吗？",
+    "每学期跑步打卡的要求是多少公里，可以骑车吗？",
+    "寒暑假放多久，每年小学期有多长？",
+    "学校允许点外卖吗，取外卖的地方离宿舍楼多远？",
+    "学校交通便利吗，有地铁吗，在市区吗，不在的话进城要多久？",
+    "宿舍楼有洗衣机吗？",
+    "校园网怎么样？",
+    "每天断电断网吗，几点开始断？",
+    "食堂价格贵吗，会吃出异物吗？",
+    "洗澡热水供应时间？",
+    "校园内可以骑电瓶车吗，电池在哪能充电？",
+    "宿舍限电情况？",
+    "通宵自习有去处吗？",
+    "大一能带电脑吗？",
+    "学校里面用什么卡，饭堂怎样消费？",
+    "学校会给学生发银行卡吗？",
+    "学校的超市怎么样？",
+    "学校的收发快递政策怎么样？",
+    "学校里面的共享单车数目与种类如何？",
+    "现阶段学校的门禁情况如何？",
+    "宿舍晚上查寝吗，封寝吗，晚归能回去吗？",
+]
+N_QUESTIONS = len(CANONICAL_HEADINGS)
+
+
+def _norm_heading(heading: str) -> str:
+    """规范化区块标题：去掉 `Q:` 前缀与结尾问号，便于精确比较。"""
+    h = heading.strip()
+    if h.startswith("Q:"):
+        h = h[2:]
+    return h.strip().rstrip("？?").strip()
+
+# 极性词典。NEG_FIRST 内部的短语本身含否定词，必须先于 NEG_TOKENS 判断。
 NEG_FIRST = (
     "不断电", "不会断电", "不断网", "不会断网", "不查寝", "不封寝", "不封",
     "不限电", "不查", "不用", "不需要", "不允许", "不能骑", "不可以",
@@ -81,8 +123,13 @@ NEG_FIRST = (
 NOT_A_NEGATION = (
     "不计入", "不收费", "不要钱", "不花钱", "不包括", "不算", "不止",
     "不过", "不管", "不一定", "不固定", "不到", "不多", "不少",
+    "不错", "不卡", "不差", "不赖",
 )
-NEG_TOKENS = ("没有", "無", "无法", "不能", "不让", "不允许", "不给", "不是", "否", "无", "不")
+# 含「不/无/有/发/多」等字但语义中性的词，做极性判断前先剔除，
+# 否则「无线」「发现」「多久」会被误当成否定/肯定信号
+NEUTRALIZE = ("无线", "发现", "出发", "沙发", "头发", "多少", "多久",
+              "附近", "最近", "将近", "所有")
+NEG_TOKENS = ("没有", "無", "无法", "不能", "不让", "不允许", "不给", "不是", "否", "无", "未", "没", "不")
 POS_TOKENS = (
     "有", "是", "可以", "能", "允许", "提供", "配备", "支持", "发", "给",
     "方便", "免费", "充足", "多", "好", "便利", "近", "便宜",
@@ -90,6 +137,7 @@ POS_TOKENS = (
 HEDGE_TOKENS = (
     "部分", "有的", "有些", "看", "分校区", "不同", "一半", "多数", "少数",
     "有的校区", "各校区", "视", "取决于", "但", "不过", "然而", "但是",
+    "有时", "好像", "勉强",
 )
 # 反问 / 语义不明：含这些标记时不做极性断言，交回原文给人判断
 QUERY_TOKENS = (
@@ -114,7 +162,11 @@ def load_index(path: Path) -> list[tuple[str, str, str]]:
 
 
 def load_aliases() -> dict[str, tuple[str, str]]:
-    """别名 -> (学校名, 文件名)"""
+    """别名 -> (学校名, 文件名)。
+
+    这里用 setdefault 处理重复别名；别名表的唯一性由 build_aliases.py 保证、
+    并由 verify.py 强制检查（重复别名会让 verify.py 失败），因此不会静默取错。
+    """
     out: dict[str, tuple[str, str]] = {}
     if not ALIASES.exists():
         return out
@@ -132,7 +184,14 @@ def load_aliases() -> dict[str, tuple[str, str]]:
 
 def resolve(query: str, aliases: dict[str, tuple[str, str]],
             active: list[tuple[str, str, str]], archived: list[tuple[str, str, str]]) -> list[dict]:
-    """把用户输入（全称/简称/文件名）解析为候选学校。"""
+    """把用户输入（全称/简称/文件名）解析为候选学校。
+
+    顺序**有意**为先别名、后全称（与 SKILL.md 第 0 步一致）：别名表由
+    build_aliases.py 保证「任何别名的文字都不等于另一所真实学校全称」，因此
+    不会劫持全称查询；少数指向「上游简称占位条目」的别名（如「川农」「东华理工」）
+    正是要优先命中真实学校。该不变式由 build_aliases.py 的兜底与 verify.py 的
+    别名检查共同守护，若被破坏 verify.py 会直接失败。
+    """
     q = query.strip()
     if q in aliases:
         name, f = aliases[q]
@@ -156,7 +215,9 @@ def resolve(query: str, aliases: dict[str, tuple[str, str]],
 # ---------------------------------------------------------------------------
 # 文件解析
 # ---------------------------------------------------------------------------
-ANSWER_RE = re.compile(r"^- (A\d+):\s*(.*)$")
+# 只吃掉行内空白，不能用 `\s*`：空回答后紧跟空行时 `\s*` 会跨行吞掉下一条
+# 回答行，导致该条被并入上一条、回答总数偏少。
+ANSWER_RE = re.compile(r"^- (A\d+):[ \t]*(.*)$")
 
 
 def parse_school(path: Path) -> dict:
@@ -187,20 +248,21 @@ def parse_school(path: Path) -> dict:
 
 
 def match_questions(blocks: list[dict], spec: str) -> list[dict]:
-    """按关键词/编号/all 选出问题区块。"""
+    """按关键词/编号/all 选出问题区块。
+
+    编号（`--q 1`…`--q 25`）按 CANONICAL_HEADINGS 精确匹配，且只返回该一个问题；
+    关键词则按 QUESTIONS 的关键词路由（可能命中多个区块，属预期）。
+    编号越界返回空列表，由调用方给出明确报错。
+    """
     if spec == "all":
         return blocks
-    picked: list[dict] = []
     if spec.isdigit():
         n = int(spec)
-        for qn, _title, _kw in QUESTIONS:
-            if qn == n:
-                picked = [b for b in blocks if b["heading"] == _title]
-                break
-        if not picked:  # 标题可能带问号等差异，退回模糊匹配
-            keys = [kw for qn, _t, kw in QUESTIONS if qn == n][0]
-            picked = [b for b in blocks if any(k in b["heading"] for k in keys)]
-        return picked
+        if not 1 <= n <= N_QUESTIONS:
+            return []
+        want = _norm_heading(CANONICAL_HEADINGS[n - 1])
+        return [b for b in blocks if _norm_heading(b["heading"]) == want]
+    picked: list[dict] = []
     keys: set[str] = {spec}
     for _qn, _title, kw in QUESTIONS:
         if spec in _title or spec in kw or any(spec in k for k in kw):
@@ -221,8 +283,13 @@ def classify(text: str) -> str:
       3. 出现分校区 / 分化措辞 → mixed；
       4. 只有否定信号 → no；只有肯定信号 → yes；都没有 → unknown。
 
+    词形处理（2026-10-04 修正）：判定前先剔除 NOT_A_NEGATION（不错/不收费…）
+    与 NEUTRALIZE（无线/发现…）中的中性词，否则「很不错」「无线」「未发现」会被
+    反向归类；计算肯定信号时先剥 NEG_FIRST 整短语、再剥 NEG_TOKENS，避免
+    「不可以骑车」里的「不」被删后残留「可以」而误判为 mixed。
+
     说明：文本层面的极性判定不可能 100% 准确，因此工具始终把原文一并输出，
-    并提醒用户「计数是回答条数，不是官方事实」。
+    并提醒用户「计数是回答条数，不是官方事实」。回归样例见 `--selftest`。
     """
     t = text.strip()
     if not t:
@@ -235,11 +302,18 @@ def classify(text: str) -> str:
     if any(tok in t for tok in QUERY_TOKENS):
         return "unknown"
 
-    has_neg = any(phr in t for phr in NEG_FIRST) or any(
-        tok in t for tok in NEG_TOKENS if tok != "是"
+    # 含「不/无/有/发」但语义中性的词先剔除（无线、发现、多久…）
+    scan = t
+    for word in NEUTRALIZE:
+        scan = scan.replace(word, "")
+
+    has_neg = any(phr in scan for phr in NEG_FIRST) or any(
+        tok in scan for tok in NEG_TOKENS if tok != "是"
     )
-    # 抛掉否定词后再看是否有肯定信号，避免「不」字本身被当成肯定
-    t_pos = t
+    # 抛掉否定短语与否定词后再看是否有肯定信号，避免「不」字本身被当成肯定
+    t_pos = scan
+    for phr in NEG_FIRST:
+        t_pos = t_pos.replace(phr, "")
     for tok in NEG_TOKENS:
         t_pos = t_pos.replace(tok, "")
     has_pos = any(tok in t_pos for tok in POS_TOKENS)
@@ -294,6 +368,12 @@ def render_question(qa: dict, limit: int, show: tuple[str, ...]) -> str:
     return "\n".join(out)
 
 
+def _no_match_message(school: str, spec: str) -> str:
+    if spec.isdigit() and not (1 <= int(spec) <= N_QUESTIONS):
+        return f"--q 编号 {spec} 越界，请输入 1-{N_QUESTIONS}，或改用问题关键词"
+    return f"在 {school} 中未匹配到问题「{spec}」"
+
+
 def cmd_single(args, aliases, active, archived) -> int:
     cands = resolve(args.school[0], aliases, active, archived)
     if not cands:
@@ -314,7 +394,7 @@ def cmd_single(args, aliases, active, archived) -> int:
     data = parse_school(path)
     blocks = match_questions(data["blocks"], args.q)
     if not blocks:
-        print(f"在 {c['name']} 中未匹配到问题「{args.q}」", file=sys.stderr)
+        print(_no_match_message(c["name"], args.q), file=sys.stderr)
         return 2
 
     result = {
@@ -346,18 +426,26 @@ def cmd_single(args, aliases, active, archived) -> int:
 
 def cmd_compare(args, aliases, active, archived) -> int:
     payload = []
+    errors = 0
     for school in args.compare:
         cands = resolve(school, aliases, active, archived)
         if not cands:
             print(f"未找到学校：{school}", file=sys.stderr)
+            errors += 1
             continue
         c = cands[0]
         base = ACTIVE_DIR if c["source"] == "active" else ARCHIVE_DIR
         path = base / c["file"]
         if not path.exists():
+            print(f"索引指向的文件不存在：{path}", file=sys.stderr)
+            errors += 1
             continue
         data = parse_school(path)
         blocks = match_questions(data["blocks"], args.q)
+        if not blocks:
+            print(_no_match_message(c["name"], args.q), file=sys.stderr)
+            errors += 1
+            continue
         payload.append({
             "school": c["name"],
             "source": c["source"],
@@ -369,25 +457,41 @@ def cmd_compare(args, aliases, active, archived) -> int:
         })
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
-        return 0
+        return 2 if errors else 0
     for item in payload:
         print(f"# {item['school']}" + ("（归档数据）" if item["source"] == "archived" else ""))
         for q in item["questions"]:
             print(render_question(q, args.limit, tuple(args.show)))
             print()
         print("-" * 60)
-    return 0
+    return 2 if errors else 0
 
 
 def cmd_reverse(args, aliases, active, archived) -> int:
     """反向筛选：扫描全部学校，对目标问题做极性统计后筛选。"""
-    # 用一所真实学校确认关键词能定位到区块
-    probe_blocks = match_questions(parse_school(ACTIVE_DIR / active[0][2])["blocks"], args.reverse)
-    if not probe_blocks:
-        print(f"关键词「{args.reverse}」无法定位到任何标准问题区块；"
-              f"请改用 1-25 编号或 25 问关键词。", file=sys.stderr)
-        return 2
-    target_headings = {b["heading"] for b in probe_blocks}
+    # 目标区块：编号直接用规范标题；关键词用第一个可读的活跃文件做探针。
+    # 不再无条件用 active[0]——空索引、缺文件或该文件缺区块都会让整轮扫描静默失真。
+    if args.reverse.isdigit():
+        n = int(args.reverse)
+        if not 1 <= n <= N_QUESTIONS:
+            print(f"--reverse 编号 {n} 越界，请输入 1-{N_QUESTIONS}，或改用问题关键词",
+                  file=sys.stderr)
+            return 2
+        target_headings = {CANONICAL_HEADINGS[n - 1]}
+    else:
+        probe_file = next(
+            (ACTIVE_DIR / f for _n, _p, f in active if (ACTIVE_DIR / f).exists()), None
+        )
+        if probe_file is None:
+            print("活跃库为空或索引中的文件缺失，无法解析关键词", file=sys.stderr)
+            return 2
+        probe_blocks = match_questions(parse_school(probe_file)["blocks"], args.reverse)
+        if not probe_blocks:
+            print(f"关键词「{args.reverse}」无法定位到任何标准问题区块；"
+                  f"请改用 1-25 编号或 25 问关键词。", file=sys.stderr)
+            return 2
+        target_headings = {b["heading"] for b in probe_blocks}
+    targets = {_norm_heading(h) for h in target_headings}
 
     hits = []
     for rows, base, src in ((active, ACTIVE_DIR, "active"), (archived, ARCHIVE_DIR, "archived")):
@@ -400,7 +504,7 @@ def cmd_reverse(args, aliases, active, archived) -> int:
             except OSError:
                 continue
             for b in data["blocks"]:
-                if b["heading"] not in target_headings:
+                if _norm_heading(b["heading"]) not in targets:
                     continue
                 s = summarize(b["answers"], data["dates"])
                 n_yes = s["counts"].get("yes", 0)
@@ -419,10 +523,14 @@ def cmd_reverse(args, aliases, active, archived) -> int:
                         "heading": b["heading"],
                         "yes": n_yes, "no": n_no, "mixed": n_mixed, "total": s["total"],
                     })
-            if args.max_scan and len(hits) >= args.max_scan * 20:
-                break
+    def rank(h: dict) -> tuple:
+        if args.polarity == "mixed":
+            return (-h["mixed"], h["school"])
+        if args.polarity == "no":
+            return (-h["no"], h["school"])
+        return (-h["yes"], h["school"])
 
-    hits.sort(key=lambda h: (-(h["yes"] if args.polarity == "yes" else h["no"]), h["school"]))
+    hits.sort(key=rank)
     if args.json:
         print(json.dumps({"keyword": args.reverse, "polarity": args.polarity,
                           "count": len(hits), "results": hits[: args.limit]},
@@ -444,6 +552,38 @@ def cmd_reverse(args, aliases, active, archived) -> int:
     return 0
 
 
+SELFTEST_CASES: list[tuple[str, str]] = [
+    # (回答文本, 期望极性)：回归 2026-10-04 修正的词内误判
+    ("很不错，基本全覆盖（要办校园卡）", "unknown"),
+    ("有时很差", "mixed"),
+    ("勉强能用，晚上经常断", "mixed"),
+    ("宿舍无线接入约500Mbps", "unknown"),
+    ("宿舍附近未发现充电地点", "no"),
+    ("不可以骑车", "no"),
+    ("不断电", "no"),
+    ("没有空调", "no"),
+    ("有空调", "yes"),
+    ("能带电脑", "yes"),
+    ("不能带电脑", "no"),
+    ("不断电但会跳闸", "mixed"),
+    ("部分宿舍有空调", "mixed"),
+    ("", "unknown"),
+]
+
+
+def run_selftest() -> int:
+    """跑极性判定回归样例；不读取数据文件，可离线执行。"""
+    bad = 0
+    for text, want in SELFTEST_CASES:
+        got = classify(text)
+        if got != want:
+            bad += 1
+        flag = "ok  " if got == want else "FAIL"
+        print(f"  [{flag}] {text!r:44} want={want:7} got={got}")
+    print(f"== query.py 极性回归：{len(SELFTEST_CASES) - bad}/{len(SELFTEST_CASES)} 通过 ==")
+    return 1 if bad else 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="大学生活质量结构化查询")
     ap.add_argument("school", nargs="*", help="学校名 / 简称 / 文件名")
@@ -458,9 +598,12 @@ def main() -> int:
     ap.add_argument("--show", nargs="+", default=["yes", "no", "mixed", "unknown"],
                     choices=("yes", "no", "mixed", "unknown"), help="展示哪些分类")
     ap.add_argument("--include-archived", action="store_true", help="反向筛选时包含归档库")
-    ap.add_argument("--max-scan", type=int, default=0, help=argparse.SUPPRESS)
+    ap.add_argument("--selftest", action="store_true", help="运行极性判定回归样例后退出")
     ap.add_argument("--json", action="store_true", help="输出 JSON")
     args = ap.parse_args()
+
+    if args.selftest:
+        return run_selftest()
 
     aliases = load_aliases()
     active = load_index(INDEX)

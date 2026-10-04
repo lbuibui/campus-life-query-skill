@@ -6,8 +6,16 @@
 形态补进一张独立索引表。
 
 两条来源：
-  1. SEED —— 人工维护的常见简称表（权威，含曾用名）；
-  2. 自动派生 —— 对活跃校名做「去后缀」与「唯一子串包含」推导。
+  1. SEED —— 人工维护的常见简称表（权威，含曾用名）；键必须与索引校名**全等**，
+     找不到全等条目即视为种子失效并告警，绝不做子串猜测；
+  2. 自动派生 —— 只对活跃校名做「去后缀」推导（如「XX 大学」→「XX」）。
+
+历史教训（2026-10-04 修正）：曾有一条「唯一子串包含」规则，把索引里已有的校名
+当作别名去指向更长的校区名——例如把「上海交通大学」指向「上海交通大学医学院」、
+把「石河子大学」指向「石河子大学护士学校」。它在 3157 条别名里制造了 329 条
+劫持，且没有贡献任何一条有价值的别名，该规则已整体删除。「去后缀」规则也加了
+护栏：凡派生结果本身是另一所**真实学校全称**（含「大学/学院/学校」等后缀）的
+一律丢弃；只有指向上游「简称占位条目」时才保留（如「东华理工」→「东华理工大学」）。
 
 覆盖范围只含活跃库 references/index.md：每条别名都带活跃库文件名，
 只存在于归档库的学校（如「中国音乐学院」）请直接查 references/archived/index.md。
@@ -17,7 +25,7 @@
 
 用法：
     python3 tools/build_aliases.py            # 重建 references/aliases.md
-    python3 tools/build_aliases.py --check    # 只校验，不写文件
+    python3 tools/build_aliases.py --check    # 校验现存 aliases.md 是否与生成结果一致
 """
 
 from __future__ import annotations
@@ -70,7 +78,8 @@ SEED: dict[str, list[str]] = {
     "中国矿业大学": ["矿大", "CUMT"],
     "中国地质大学北京": ["地大", "CUG"],
     "中国地质大学武汉": ["地大武汉"],
-    "中国石油大学": ["石大", "中石大", "UPC"],
+    # 注意：索引中只有「中国石油大学北京 / 北京克拉玛依 / 华东」等校区名，
+    # 没有全等条目；石大/中石大/UPC 在三者间有歧义，按「绝不猜」原则不收录。
     "中国科学院大学": ["国科大", "UCAS"],
     "中国科学技术大学": ["中科大", "USTC"],
     "中国社会科学院大学": ["社科大"],
@@ -225,7 +234,7 @@ SEED: dict[str, list[str]] = {
     "宁夏大学": ["宁夏大", "NXU"],
     "青海大学": ["青海大", "QHU"],
     "新疆大学": ["新大", "XJU"],
-    "石河子大学": ["石大"],
+    # 「石大」在民间既可指中国石油大学（华东）也可指石河子大学，有歧义，不收录。
     "云南大学": ["云大", "YNU"],
     "昆明理工大学": ["昆工", "KUST"],
     "云南师范大学": ["云南师大", "YNNU"],
@@ -342,10 +351,16 @@ SEED: dict[str, list[str]] = {
     "澳门理工大学": ["澳理工", "MPU"],
 }
 
+# 顺序有意义：先「学院」再「职业技术学院」会让「XX学院」派生「XX」、
+# 「XX职业技术学院」派生「XX职业技术」，两者互不冲突；若改成「长后缀优先」，
+# 二者都会派生「XX」而因歧义被整体丢弃，实测会损失 898 条有效别名。保持原序。
 REMOVABLE_SUFFIXES = [
     "大学", "学院", "职业技术学院", "职业学院", "高等专科学校",
     "师范学校", "医学院", "工学院", "文理学院",
 ]
+
+# 含这些词的校名视为「真实学校全称」；派生的别名若与之全等，说明会劫持另一所学校。
+FULL_NAME_MARKERS = ("大学", "学院", "学校", "中学", "小学", "公学", "校区", "分校")
 
 # 太泛化、单独出现时几乎必然误伤的通用词，不作为别名
 STOPWORDS = {
@@ -373,15 +388,9 @@ def parse_index(path: Path) -> list[tuple[str, str, str]]:
     return rows
 
 
-def longest_substring_match(key: str, names: list[str]) -> list[str]:
-    """key 命中哪些校名：全等优先，否则取最长子串命中的那些。"""
-    if key in names:
-        return [key]
-    hits = [n for n in names if key and key in n]
-    if not hits:
-        return []
-    longest = max(len(h) for h in hits)
-    return [h for h in hits if len(h) == longest]
+def is_full_school_name(name: str) -> bool:
+    """校名看起来是「真实学校全称」（含学校类后缀），而非上游的简称占位条目。"""
+    return any(marker in name for marker in FULL_NAME_MARKERS)
 
 
 def main() -> int:
@@ -391,6 +400,7 @@ def main() -> int:
 
     rows = parse_index(INDEX)
     names = [r[0] for r in rows]
+    nameset = set(names)
     file_of = {r[0]: r[2] for r in rows}
     province_of = {r[0]: r[1] for r in rows}
 
@@ -402,36 +412,38 @@ def main() -> int:
             return
         alias_map[alias].add(school)
 
-    # --- 规则 1：人工种子表 -------------------------------------------------
+    # --- 规则 1：人工种子表（键必须与索引校名全等，不做子串猜测） -----------
     seed_missing: list[str] = []
-    seed_ambiguous: list[tuple[str, tuple[str, ...]]] = []
     for key, aliases in SEED.items():
-        hits = longest_substring_match(key, names)
-        if not hits:
+        if key not in nameset:
+            # 全等找不到就不再猜：记入告警，由维护者改成索引中的真实校名
             seed_missing.append(key)
             continue
         for a in aliases:
-            for h in hits:
-                add(a, h)
-        if len(hits) > 1:
-            seed_ambiguous.append((key, tuple(hits)))
+            add(a, key)
 
     # --- 规则 2：「去掉后缀」派生别名 ---------------------------------------
     for school in names:
         for suf in REMOVABLE_SUFFIXES:
-            if school.endswith(suf) and len(school) - len(suf) >= 4:
-                add(school[: -len(suf)], school)
+            if not school.endswith(suf) or len(school) - len(suf) < 4:
+                continue
+            derived = school[: -len(suf)]
+            # 护栏：派生结果若是另一所真实学校全称，会劫持它，丢弃。
+            # （指向上游「简称占位条目」则放行，如「东华理工」→「东华理工大学」。）
+            if derived in nameset and is_full_school_name(derived):
                 break
+            add(derived, school)
+            break
 
-    # --- 规则 3：唯一子串包含（覆盖分校区） ---------------------------------
-    for school in names:
-        for short in names:
-            if short != school and len(short) >= 5 and short in school:
-                add(short, school)
+    # 规则 3（「唯一子串包含」）已删除：它的别名全部取自索引校名本身，
+    # 必然把某所学校指向另一所学校，是 329 条劫持的唯一来源，且无一条有效产出。
 
     # --- 汇总 --------------------------------------------------------------
     unique = {a: next(iter(s)) for a, s in alias_map.items() if len(s) == 1}
     unique = {a: s for a, s in unique.items() if a != s}  # 无需重复收录全称
+    # 兜底防回归：任何仍然指向「另一所真实学校全称」的别名一律丢弃
+    for a in [a for a, s in unique.items() if a != s and a in nameset and is_full_school_name(a)]:
+        del unique[a]
 
     by_school: dict[str, list[str]] = defaultdict(list)
     for alias, school in unique.items():
@@ -440,7 +452,6 @@ def main() -> int:
         by_school[school].sort(key=lambda a: (-len(a), a))
 
     seed_missing = sorted(set(seed_missing))
-    seed_ambiguous = sorted(set(seed_ambiguous))
 
     lines: list[str] = [
         "# 学校别名 / 简称索引",
@@ -455,10 +466,7 @@ def main() -> int:
         "> 本表无命中时，回退到 `references/index.md` 用全称或关键词搜索。",
         "",
         "> **歧义保护**：本表只收录唯一指向一所学校的别名。",
-    ]
-    if seed_ambiguous:
-        lines.append(f"> 有 {len(seed_ambiguous)} 个人工维护的简称会指向多校，未收录（见文末），遇到时请先与用户确认。")
-    lines += [
+        "> 任何别名的文字都不会等于另一所学校的全称（否则会劫持全称查询）。",
         "",
         "| 别名 / 简称 | 学校全名 | 省份 | 文件 |",
         "|---|---|---|---|",
@@ -470,34 +478,24 @@ def main() -> int:
         )
     lines.append("")
 
-    if seed_ambiguous:
-        lines += [
-            "## 会指向多校的简称（需人工确认）",
-            "",
-            "| 简称 | 可能指向 |",
-            "|---|---|",
-        ]
-        for key, hits in seed_ambiguous:
-            lines.append(f"| {key} | {' / '.join(hits)} |")
-        lines.append("")
-
     text = "\n".join(lines).rstrip() + "\n"
 
     if args.check:
+        current = OUT.read_text(encoding="utf-8") if OUT.exists() else ""
+        drift = current != text
         print(f"[check] 唯一别名 {len(unique)} 个，覆盖 {len(by_school)} 所学校")
         if seed_missing:
             print(f"[check] 种子未命中 {len(seed_missing)}：{seed_missing}")
-        if seed_ambiguous:
-            print(f"[check] 种子歧义 {len(seed_ambiguous)}：{seed_ambiguous}")
-        print("[check] 未写入文件")
-        return 1 if seed_missing else 0
+        if drift:
+            print(f"[check] {OUT.relative_to(ROOT)} 与生成结果不一致，需要重建")
+        else:
+            print(f"[check] {OUT.relative_to(ROOT)} 与生成结果一致")
+        return 1 if (drift or seed_missing) else 0
 
     OUT.write_text(text, encoding="utf-8")
     print(f"写入 {OUT.relative_to(ROOT)}：{len(unique)} 个别名 / {len(by_school)} 所学校")
     if seed_missing:
-        print(f"警告：种子表未命中 {len(seed_missing)} 项 -> {seed_missing}")
-    if seed_ambiguous:
-        print(f"警告：种子表歧义 {len(seed_ambiguous)} 项 -> {seed_ambiguous}")
+        print(f"警告：种子表未命中 {len(seed_missing)} 项 -> {seed_missing}（请改成索引中的真实校名）")
     return 0
 
 
