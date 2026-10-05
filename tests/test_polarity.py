@@ -33,6 +33,21 @@ class TestSpecs(unittest.TestCase):
             self.assertTrue(heading.endswith("？"), heading)
             self.assertEqual(P.spec_for_qid(i).heading(), heading)
 
+    def test_q13_labels_match_classifier_axis(self):
+        """Q13 的极性轴是「不贵/无异物 = yes」；标签写反会让输出与 --reverse 说反。
+
+        分类器把「不贵 / 便宜 / 无异物」判为 YES、「贵 / 有异物」判为 NO
+        （见 SELFTEST_CASES 与 PER_QUESTION_CASES），yes_label 必须与之一致。
+        """
+        spec = P.spec_for_qid(13)
+        self.assertEqual(P.classify("不贵，也没吃出过异物", spec), P.YES)
+        self.assertEqual(P.classify("很贵，有异物", spec), P.NO)
+        self.assertIn("不贵", spec.yes_label)
+        self.assertIn("无异物", spec.yes_label)
+        self.assertNotIn("不贵", spec.no_label)
+        self.assertNotIn("无异物", spec.no_label)
+        self.assertIn("贵", spec.no_label)
+
     def test_every_spec_has_a_predicate_and_labels(self):
         for spec in P.SPECS:
             with self.subTest(qid=spec.qid):
